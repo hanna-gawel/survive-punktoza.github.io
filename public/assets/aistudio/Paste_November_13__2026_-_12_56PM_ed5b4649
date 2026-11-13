@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Academic Pokémon Go: Survive Punktoza</title>
+  <style>
+    :root {
+      --bg-card: #FAF6F2;
+      --text-dark: #1E1D1C;
+      --text-muted: #5C5752;
+      --accent-blue: #0A5EB0;
+      --accent-gold: #E8AC41;
+      --accent-yellow: #F7D16A;
+      --accent-peach: #F4A97B;
+      --accent-coral: #EA6C6C;
+      --accent-pink: #F2A7C3;
+      --ghost-dark: #1A1717;
+      --ghost-red: #8E2331;
+      --success-green: #2E8555;
+      --radius: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 14px;
+      background:
+        radial-gradient(circle at 85% 15%, rgba(234, 108, 108, 0.85), transparent 50%),
+        radial-gradient(circle at 15% 25%, rgba(242, 167, 195, 0.85), transparent 55%),
+        radial-gradient(circle at 50% 85%, rgba(247, 209, 106, 0.75), transparent 60%),
+        linear-gradient(135deg, #f5b293 0%, #e97d76 50%, #d896b8 100%);
+      background-attachment: fixed;
+    }
+
+    /* Subtle grain overlay matching the slides */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.055;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .app-container {
+      position: relative;
+      width: 100%;
+      max-width: 460px;
+      background: var(--bg-card);
+      border-radius: 26px;
+      padding: 20px 18px 24px;
+      box-shadow: 0 20px 50px rgba(45, 20, 20, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      margin-top: 6px;
+      margin-bottom: 20px;
+    }
+
+    .screen {
+      display: none;
+      animation: fadeIn 0.28s ease-out;
+    }
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    .shake {
+      animation: shake 0.45s ease;
+    }
+
+    /* Header & Badges */
+    .pill-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: var(--accent-yellow);
+      color: var(--text-dark);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 26px;
+      line-height: 1.15;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 21px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    p {
+      font-size: 14.5px;
+      line-height: 1.48;
+      color: var(--text-muted);
+    }
+
+    .highlight-box {
+      background: #FFF;
+      border: 1.5px solid #EAE2DA;
+      border-radius: 16px;
+      padding: 14px;
+      margin: 14px 0;
+    }
+
+    .rules-list {
+      list-style: none;
+      margin-top: 8px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .rules-list li {
+      font-size: 13.5px;
+      line-height: 1.4;
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      color: var(--text-dark);
+    }
+
+    .rules-list span.icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 15px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, filter 0.12s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--text-dark);
+      color: #FFF;
+      margin-top: 12px;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #F7D16A, #E49E32);
+      color: #1E1D1C;
+      box-shadow: 0 8px 20px rgba(228, 158, 50, 0.35);
+      margin-top: 14px;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid #D8CFC6;
+      color: var(--text-dark);
+      margin-top: 10px;
+      padding: 12px 16px;
+      font-size: 14px;
+    }
+
+    /* HUD */
+    .hud {
+      background: #FFF;
+      border: 1.5px solid #EAE2DA;
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+
+    .hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .hud-score {
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .hud-score span {
+      color: var(--accent-blue);
+    }
+
+    .balls-wrap {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .pokeball-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--text-dark);
+      background: linear-gradient(to bottom, #EA6C6C 50%, #FFF 50%);
+      position: relative;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .pokeball-dot::after {
+      content: "";
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: #FFF;
+      border: 1.5px solid var(--text-dark);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .pokeball-dot.used {
+      opacity: 0.2;
+      transform: scale(0.8);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      background: #EFE9E3;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-peach), var(--accent-blue));
+      border-radius: 999px;
+      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease;
+    }
+
+    .hud-sub {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 7px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* Toast feedback */
+    .toast {
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 9px 12px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      background: #FFF5D6;
+      border: 1px solid #F0D47E;
+      color: #5E4306;
+      display: none;
+    }
+
+    .toast.show {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+
+    /* Wild Pokemon Cards */
+    .cards-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .poke-card {
+      background: #FFF;
+      border: 1.5px solid #EAE2DA;
+      border-radius: 16px;
+      padding: 12px 13px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+      width: 100%;
+    }
+
+    .poke-card:hover {
+      border-color: #C7BBB0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .poke-card:active {
+      transform: scale(0.985);
+    }
+
+    .poke-card.disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .poke-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .av-preprint { background: #FFF2C9; }
+    .av-j140 { background: #FCE0EA; }
+    .av-dragon { background: #EAE6E4; }
+    .av-salami { background: #FFE4D4; }
+    .av-conf { background: #E3EFFB; }
+
+    .poke-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .poke-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 3px;
+    }
+
+    .poke-name {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--text-dark);
+    }
+
+    .cp-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .cp-zero { background: #FFF2C9; color: #7C5800; }
+    .cp-high { background: #1E1D1C; color: #FFF; }
+    .cp-mid { background: #FCE0EA; color: #8A1E46; }
+    .cp-nerfed { background: #FFE2E2; color: #B81D1D; text-decoration: line-through; }
+    .cp-nerf-new { background: #B81D1D; color: #FFF; }
+    .cp-low { background: #E3EFFB; color: #0A5EB0; }
+
+    .poke-desc {
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--text-muted);
+    }
+
+    /* Patch Modal Overlay */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 14, 14, 0.72);
+      backdrop-filter: blur(4px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 18px;
+      z-index: 50;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal-box {
+      background: #FFF;
+      max-width: 390px;
+      width: 100%;
+      border-radius: 22px;
+      padding: 22px 20px;
+      text-align: center;
+      border: 3px solid var(--accent-coral);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+    }
+
+    .modal-alert {
+      display: inline-block;
+      background: #B81D1D;
+      color: #FFF;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+
+    /* Result Cards */
+    .result-card {
+      border-radius: 20px;
+      padding: 20px 18px;
+      margin-bottom: 14px;
+    }
+
+    .res-fired {
+      background: #FFF0F0;
+      border: 2px solid #EA6C6C;
+    }
+
+    .res-ghost {
+      background: linear-gradient(165deg, #1E1B1B 0%, #4E1620 100%);
+      color: #FFF;
+      border: 2px solid #8E2331;
+    }
+
+    .res-ghost p {
+      color: rgba(255,255,255,0.82);
+    }
+
+    .res-hacker {
+      background: linear-gradient(155deg, #FFFDF7 0%, #FFF2C9 100%);
+      border: 2px solid #E8AC41;
+    }
+
+    .stat-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 14px 0 4px;
+    }
+
+    .stat-box {
+      background: rgba(255,255,255,0.85);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+      color: var(--text-dark);
+    }
+
+    .res-ghost .stat-box {
+      background: rgba(255,255,255,0.1);
+      color: #FFF;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .stat-label {
+      font-size: 10.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+      opacity: 0.75;
+      margin-bottom: 3px;
+    }
+
+    .stat-val {
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .footer-credit {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 14px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="app-container" id="app">
+    <!-- SCREEN 1: INTRO -->
+    <section class="screen active" id="screen-intro">
+      <span class="pill-tag">Interactive Simulation · Poland</span>
+      <h1>Academic Pokémon Go:<br>Survive Punktoza</h1>
+      <p>You just heard why preprints are faster, open, and AI-ready. Now experience why rational researchers still avoid them.</p>
+
+      <div class="highlight-box">
+        <strong style="font-size: 13.5px;">Your 4-Year Evaluation Rules:</strong>
+        <ul class="rules-list">
+          <li><span class="icon">🎯</span><span><strong>Goal:</strong> Reach <strong>200 Ministerial Points</strong> to keep your job and department funding.</span></li>
+          <li><span class="icon">🔴</span><span><strong>Ammo:</strong> You only have <strong>3 Action Balls</strong> (time, budget &amp; sanity).</span></li>
+          <li><span class="icon">📊</span><span><strong>The Catch:</strong> Points come strictly from a central government spreadsheet — not from peers reading your work.</span></li>
+        </ul>
+      </div>
+
+      <button class="btn btn-primary" onclick="startGame()">
+        Start 4-Year Cycle →
+      </button>
+      <div class="footer-credit">Based on dr Hanna Gaweł's research · Jagiellonian University</div>
+    </section>
+
+    <!-- SCREEN 2: GAMEPLAY -->
+    <section class="screen" id="screen-game">
+      <div class="hud">
+        <div class="hud-top">
+          <div class="hud-score">Ministry Score: <span id="hud-pts">0</span> / 200</div>
+          <div class="balls-wrap">
+            <span>Balls:</span>
+            <div class="pokeball-dot" id="ball-1"></div>
+            <div class="pokeball-dot" id="ball-2"></div>
+            <div class="pokeball-dot" id="ball-3"></div>
+          </div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="hud-sub">
+          <span id="hud-vis">AI &amp; Human Visibility: 0%</span>
+          <span id="hud-round">Pick 1 of 3</span>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+
+      <div class="cards-grid" id="cards-grid">
+        <!-- Cards rendered by JS -->
+      </div>
+    </section>
+
+    <!-- SCREEN 3: RESULTS -->
+    <section class="screen" id="screen-result">
+      <div id="result-content"></div>
+
+      <div id="cheat-section" style="display:none;">
+        <button class="btn btn-gold" onclick="unlockCheatCode()">
+          ⚡ Use Cheat Code: Attach Preprint (Open API)
+        </button>
+      </div>
+
+      <button class="btn btn-outline" onclick="startGame()">
+        ↻ Play Again (Try Another Strategy)
+      </button>
+      <div class="footer-credit">Show your Trainer Card to the person next to you!</div>
+    </section>
+  </main>
+
+  <!-- MINISTERIAL PATCH MODAL -->
+  <div class="modal-backdrop" id="patch-modal">
+    <div class="modal-box">
+      <span class="modal-alert">BREAKING: MINISTERIAL PATCH UPDATE!</span>
+      <h2>Spreadsheet Edited Overnight!</h2>
+      <p id="patch-text" style="margin: 10px 0 16px; color: #1E1D1C;"></p>
+      <button class="btn btn-primary" onclick="closePatchModal()">
+        Accept Reality &amp; Continue →
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let state = {
+      ballsLeft: 3,
+      points: 0,
+      visibility: 0,
+      picks: [],
+      hasPreprint: false,
+      has140: false,
+      hasPaywall200: false,
+      hasSalami: 0,
+      nerfed: false
+    };
+
+    const items = [
+      {
+        id: "preprint",
+        name: "Open Preprint (D2C Bypass)",
+        avatar: "⚡",
+        avClass: "av-preprint",
+        badgeText: "0 PTS",
+        badgeClass: "cp-zero",
+        desc: "Immediate DOI, +12 mo citations, readable by LLMs & OpenAIRE.",
+        repeatable: true
+      },
+      {
+        id: "j140",
+        name: "140-pt International Journal",
+        avatar: "📘",
+        avClass: "av-j140",
+        badgeText: "140 PTS",
+        badgeClass: "cp-mid",
+        desc: "Solid peer-reviewed venue. Safe, respectable academic choice.",
+        repeatable: false
+      },
+      {
+        id: "dragon200",
+        name: "200-pt Paywall Leviathan",
+        avatar: "🐉",
+        avClass: "av-dragon",
+        badgeText: "200 PTS",
+        badgeClass: "cp-high",
+        desc: "Commercial monopoly. 24-month embargo, $3k fee or paywall lock.",
+        repeatable: false
+      },
+      {
+        id: "salami",
+        name: "The Salami Slicer",
+        avatar: "🍕",
+        avClass: "av-salami",
+        badgeText: "70 PTS each",
+        badgeClass: "cp-mid",
+        desc: "Chop 1 good idea into tiny repetitive papers. Fast points! (Repeatable)",
+        repeatable: true
+      },
+      {
+        id: "conf",
+        name: "Conference Nomad & Admin",
+        avatar: "✈️",
+        avClass: "av-conf",
+        badgeText: "25 PTS",
+        badgeClass: "cp-low",
+        desc: "Fly abroad for a 15-min talk + sit on 4 faculty committees.",
+        repeatable: true
+      }
+    ];
+
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    function startGame() {
+      state = {
+        ballsLeft: 3,
+        points: 0,
+        visibility: 0,
+        picks: [],
+        hasPreprint: false,
+        has140: false,
+        hasPaywall200: false,
+        hasSalami: 0,
+        nerfed: false
+      };
+      document.getElementById("toast").classList.remove("show");
+      document.getElementById("cheat-section").style.display = "none";
+      updateHUD();
+      renderCards();
+      showScreen("screen-game");
+    }
+
+    function updateHUD() {
+      document.getElementById("hud-pts").textContent = state.points;
+      const pct = Math.min(100, Math.round((state.points / 200) * 100));
+      const fill = document.getElementById("progress-fill");
+      fill.style.width = pct + "%";
+      fill.style.background = state.points >= 200
+        ? "linear-gradient(90deg, #2E8555, #47B87B)"
+        : "linear-gradient(90deg, #F4A97B, #0A5EB0)";
+
+      document.getElementById("hud-vis").textContent = `AI & Human Visibility: ${Math.min(100, state.visibility)}%`;
+      const usedCount = 3 - state.ballsLeft;
+      document.getElementById("hud-round").textContent =
+        state.ballsLeft > 0 ? `Pick ${usedCount + 1} of 3` : "Cycle Complete";
+
+      for (let i = 1; i <= 3; i++) {
+        const dot = document.getElementById(`ball-${i}`);
+        if (i > state.ballsLeft) dot.classList.add("used");
+        else dot.classList.remove("used");
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerHTML = msg;
+      t.classList.add("show");
+    }
+
+    function renderCards() {
+      const grid = document.getElementById("cards-grid");
+      grid.innerHTML = "";
+
+      items.forEach(item => {
+        const alreadyPicked = !item.repeatable && state.picks.includes(item.id);
+        const btn = document.createElement("button");
+        btn.className = "poke-card" + (alreadyPicked ? " disabled" : "");
+        btn.onclick = () => pickItem(item.id);
+
+        let badgeHTML = `<span class="cp-badge ${item.badgeClass}">${item.badgeText}</span>`;
+        if (item.id === "j140" && state.nerfed) {
+          badgeHTML = `<div><span class="cp-badge cp-nerfed">140</span> <span class="cp-badge cp-nerf-new">40 PTS!</span></div>`;
+        }
+
+        btn.innerHTML = `
+          <div class="poke-avatar ${item.avClass}">${item.avatar}</div>
+          <div class="poke-info">
+            <div class="poke-title-row">
+              <span class="poke-name">${item.name}</span>
+              ${badgeHTML}
+            </div>
+            <div class="poke-desc">${alreadyPicked ? "Already in your Pokédex for this cycle." : item.desc}</div>
+          </div>
+        `;
+        grid.appendChild(btn);
+      });
+    }
+
+    function pickItem(id) {
+      if (state.ballsLeft <= 0) return;
+
+      state.ballsLeft -= 1;
+      state.picks.push(id);
+
+      if (id === "preprint") {
+        state.hasPreprint = true;
+        state.visibility = Math.min(100, state.visibility + 55);
+        showToast("⚡ <strong>+0 Ministry Points!</strong> Your Dean asks: <em>\"Great downloads, but where are the spreadsheet points?!\"</em>");
+      } else if (id === "j140") {
+        state.has140 = true;
+        const ptsAdded = state.nerfed ? 40 : 140;
+        state.points += ptsAdded;
+        state.visibility = Math.min(100, state.visibility + 10);
+        showToast(`📘 Caught! <strong>+${ptsAdded} pts</strong> added. Now waiting 18–24 months for the gatekeeper...`);
+      } else if (id === "dragon200") {
+        state.hasPaywall200 = true;
+        state.points += 200;
+        state.visibility = Math.min(100, state.visibility + 5);
+        showToast("🐉 <strong>+200 pts!</strong> Huge Ministry score! Locked behind a $39.95 commercial paywall.");
+      } else if (id === "salami") {
+        state.hasSalami += 1;
+        state.points += 70;
+        state.visibility = Math.min(100, state.visibility + 5);
+        showToast(`🍕 <strong>+70 pts!</strong> Paper #${state.hasSalami} published. Zero scientific novelty, high efficiency.`);
+      } else if (id === "conf") {
+        state.points += 25;
+        state.visibility = Math.min(100, state.visibility + 10);
+        showToast("✈️ <strong>+25 pts!</strong> Exhausted from committees & flights, tiny dent in the quota.");
+      }
+
+      updateHUD();
+
+      // Trigger Ministerial Balance Patch after 2nd pick!
+      if (state.ballsLeft === 1 && !state.nerfed) {
+        state.nerfed = true;
+        setTimeout(() => triggerPatchModal(), 350);
+      } else if (state.ballsLeft === 0) {
+        setTimeout(() => showResult(), 450);
+      } else {
+        renderCards();
+      }
+    }
+
+    function triggerPatchModal() {
+      const txt = document.getElementById("patch-text");
+      if (state.has140) {
+        state.points = Math.max(0, state.points - 100);
+        txt.innerHTML = `A new Minister updated the point list overnight! Your <strong>140-pt International Journal was NERFED to 40 pts (-100 pts!)</strong>.<br><br>Meanwhile, an obscure local journal jumped from 20 → 200 pts.`;
+        document.getElementById("app").classList.add("shake");
+        setTimeout(() => document.getElementById("app").classList.remove("shake"), 500);
+      } else {
+        txt.innerHTML = `A new Minister updated the point list overnight! The <strong>140-pt International Journal just got NERFED to 40 pts</strong>, while an obscure local journal jumped to 200 pts.<br><br>1 Action Ball left — choose wisely!`;
+      }
+      updateHUD();
+      renderCards();
+      document.getElementById("patch-modal").classList.add("active");
+    }
+
+    function closePatchModal() {
+      document.getElementById("patch-modal").classList.remove("active");
+    }
+
+    function showResult() {
+      const content = document.getElementById("result-content");
+      const cheatBox = document.getElementById("cheat-section");
+
+      if (state.points < 200) {
+        // ENDING A: FIRED / FAILED EVALUATION
+        content.innerHTML = `
+          <div class="result-card res-fired">
+            <span class="pill-tag" style="background:#B81D1D; color:#FFF;">EVALUATION FAILED</span>
+            <h2>Contract Terminated!</h2>
+            <p style="color:#3D1F1F; margin-top:6px;">
+              ${state.hasPreprint
+                ? "You followed the open-science ideal and shared preprints. AI &amp; peers loved it — <strong>but the Ministry spreadsheet says 0 points for preprints.</strong>"
+                : "Between committee grind and ministerial point nerfs, you missed the 200-point quota."}
+            </p>
+            <div class="stat-pair">
+              <div class="stat-box">
+                <div class="stat-label">Ministry Score</div>
+                <div class="stat-val" style="color:#B81D1D;">${state.points} / 200</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">AI &amp; Open Impact</div>
+                <div class="stat-val">${Math.min(100, state.visibility)}%</div>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:13.5px;"><strong>Now you feel Punktoza:</strong> Rational researchers don't avoid preprints because they hate open science. They avoid them because the scoreboard gives them <strong>zero survival points</strong>.</p>
+        `;
+        cheatBox.style.display = "block";
+      } else if (!state.hasPreprint) {
+        // ENDING B: WON PUNKTOZA, BECAME A GHOST
+        content.innerHTML = `
+          <div class="result-card res-ghost">
+            <span class="pill-tag" style="background:#8E2331; color:#FFF;">GHOST STATUS UNLOCKED</span>
+            <h2>You Win Punktoza...<br>as a Ghost in the Cache!</h2>
+            <p style="margin-top:6px;">
+              Your Dean is thrilled! You hit <strong>${state.points} points</strong>${state.hasSalami > 1 ? " by slicing your work into tiny pieces" : " behind a commercial paywall"}.
+              <br><br>
+              <strong>The cost:</strong> Paywalls block web scrapers. LLMs &amp; OpenAIRE skip you completely.
+            </p>
+            <div class="stat-pair">
+              <div class="stat-box">
+                <div class="stat-label">Ministry Score</div>
+                <div class="stat-val" style="color:#7CE3A6;">${state.points} / 200 ✓</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">AI &amp; Open Impact</div>
+                <div class="stat-val" style="color:#FF8C94;">Ghost (${state.visibility}%)</div>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:13.5px;">Can you keep your 200 points <em>without</em> disappearing from the algorithmic future of science?</p>
+        `;
+        cheatBox.style.display = "block";
+      } else {
+        // ENDING C: ALREADY HACKED IT!
+        renderHackerCard("You Naturally Hacked the System!");
+        cheatBox.style.display = "none";
+      }
+
+      showScreen("screen-result");
+    }
+
+    function unlockCheatCode() {
+      renderHackerCard("Dual-Type Evolution Unlocked!");
+      document.getElementById("cheat-section").style.display = "none";
+    }
+
+    function renderHackerCard(headline) {
+      const finalPts = Math.max(200, state.points);
+      document.getElementById("result-content").innerHTML = `
+        <div class="result-card res-hacker">
+          <span class="pill-tag" style="background:#1E1D1C; color:#F7D16A;">⚡ CHEAT CODE ACTIVE</span>
+          <h2>${headline}</h2>
+          <p style="color:#3C352B; margin-top:6px;">
+            You used the <strong>Preprint as a Dual-Type Evolution</strong>:
+          </p>
+          <ul class="rules-list" style="margin-top:10px;">
+            <li><span class="icon">1️⃣</span><span>Upload <strong>Preprint first</strong> → instant DOI, immutable timestamp, +12 mo citations &amp; Open API for LLMs.</span></li>
+            <li><span class="icon">2️⃣</span><span>Submit to the <strong>200-pt journal</strong> → collect the Ministry points so the system leaves you alone.</span></li>
+          </ul>
+          <div class="stat-pair">
+            <div class="stat-box">
+              <div class="stat-label">Ministry Score</div>
+              <div class="stat-val" style="color:#2E8555;">${finalPts} / 200 ✓</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Open API &amp; AI</div>
+              <div class="stat-val" style="color:#0A5EB0;">100% Live ⚡</div>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:13.5px; text-align:center; font-weight:700; color:#1E1D1C;">
+          "Collect the points if you must. But don’t let your research become a ghost."
+        </p>
+      `;
+    }
+  </script>
+</body>
+</html>

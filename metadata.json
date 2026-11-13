@@ -1,0 +1,6 @@
+{
+  "name": "Academic Pokémon Go: Survive Punktoza",
+  "description": "An interactive simulation exploring why rational researchers avoid open preprints under Poland's ministerial point evaluation system (Punktoza).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

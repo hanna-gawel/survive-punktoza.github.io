@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-card: #FAF6F2;
+    --text-dark: #1E1D1C;
+    --text-muted: #5C5752;
+    --accent-blue: #0A5EB0;
+    --accent-gold: #E8AC41;
+    --accent-yellow: #F7D16A;
+    --accent-peach: #F4A97B;
+    --accent-coral: #EA6C6C;
+    --accent-pink: #F2A7C3;
+    --ghost-dark: #1A1717;
+    --ghost-red: #8E2331;
+    --success-green: #2E8555;
+  }
+
+  body {
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text-dark);
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 85% 15%, rgba(234, 108, 108, 0.85), transparent 50%),
+      radial-gradient(circle at 15% 25%, rgba(242, 167, 195, 0.85), transparent 55%),
+      radial-gradient(circle at 50% 85%, rgba(247, 209, 106, 0.75), transparent 60%),
+      linear-gradient(135deg, #f5b293 0%, #e97d76 50%, #d896b8 100%);
+    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.055;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.45s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake {
+    animation: none;
+  }
+}
