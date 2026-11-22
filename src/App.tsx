@@ -1,33 +1,64 @@
 import { useEffect, useRef, useState } from 'react';
-import { RotateCcw, Volume2, VolumeX } from 'lucide-react';
-import { ACADEMIC_ACTIONS, ActionId } from './data/simulationData';
+import { RotateCcw, ShieldCheck, Trophy, Volume2, VolumeX } from 'lucide-react';
+import {
+  ACADEMIC_ACTIONS,
+  ActionId,
+  CAREER_TRACKS,
+  CareerTrack,
+  ENDINGS_CATALOG,
+  EndingId,
+  STORAGE_KEY_ENDINGS,
+} from './data/simulationData';
+import { CollectionModal } from './components/CollectionModal';
+import { ActiveTwist, EventModal } from './components/EventModal';
+import { ResultView } from './components/ResultView';
 import { playTone } from './utils/sound';
 
 type ScreenState = 'INTRO' | 'PLAYING' | 'RESULT';
+
+const TOTAL_BALLS = 4;
 
 interface GameState {
   ballsLeft: number;
   points: number;
   visibility: number;
+  credibility: number;
   picks: ActionId[];
   hasPreprint: boolean;
   has140: boolean;
   hasPaywall200: boolean;
+  hasSpecial140: boolean;
   hasSalami: number;
   nerfed: boolean;
+  passedMidterm: boolean;
+  scoopResolved: boolean;
+  wasScooped: boolean;
+  specialDelisted: boolean;
+  wasDelisted: boolean;
+  cartelResolved: boolean;
+  joinedCartel: boolean;
   cheatUnlocked: boolean;
 }
 
-const INITIAL_STATE: GameState = {
-  ballsLeft: 3,
+const INITIAL_GAME: GameState = {
+  ballsLeft: TOTAL_BALLS,
   points: 0,
   visibility: 0,
+  credibility: 100,
   picks: [],
   hasPreprint: false,
   has140: false,
   hasPaywall200: false,
+  hasSpecial140: false,
   hasSalami: 0,
   nerfed: false,
+  passedMidterm: false,
+  scoopResolved: false,
+  wasScooped: false,
+  specialDelisted: false,
+  wasDelisted: false,
+  cartelResolved: false,
+  joinedCartel: false,
   cheatUnlocked: false,
 };
 
@@ -35,16 +66,51 @@ interface ToastFeedback {
   lead: string;
   body: string;
   italicNote?: string;
+  tone?: 'warn' | 'shield' | 'neutral';
+}
+
+function clamp(val: number, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, val));
+}
+
+function loadUnlockedEndings(): EndingId[] {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_ENDINGS);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const validIds = new Set(ENDINGS_CATALOG.map((e) => e.id));
+    return parsed.filter((id): id is EndingId => validIds.has(id));
+  } catch {
+    return [];
+  }
+}
+
+function resolveEndingId(g: GameState): EndingId {
+  if (g.cheatUnlocked) return 'hacker';
+  if (g.points >= 200) {
+    if (g.joinedCartel) return 'cartel';
+    if (g.hasPreprint) return 'hacker';
+    return 'ghost';
+  }
+  if (g.wasDelisted) return 'delisted';
+  if (g.wasScooped) return 'scooped';
+  return 'fired';
 }
 
 export default function App() {
   const [screen, setScreen] = useState<ScreenState>('INTRO');
-  const [game, setGame] = useState<GameState>(INITIAL_STATE);
+  const [track, setTrack] = useState<CareerTrack>('phd');
+  const [game, setGame] = useState<GameState>(INITIAL_GAME);
   const [toast, setToast] = useState<ToastFeedback | null>(null);
-  const [showPatchModal, setShowPatchModal] = useState(false);
-  const [patchImpactLost100, setPatchImpactLost100] = useState(false);
+  const [activeTwist, setActiveTwist] = useState<ActiveTwist | null>(null);
   const [isShaking, setIsShaking] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [unlockedEndings, setUnlockedEndings] = useState<EndingId[]>(() =>
+    loadUnlockedEndings()
+  );
+  const [isNewUnlock, setIsNewUnlock] = useState(false);
+  const [showCollection, setShowCollection] = useState(false);
 
   const timersRef = useRef<number[]>([]);
 
@@ -62,168 +128,450 @@ export default function App() {
     timersRef.current.push(id);
   };
 
+  const triggerShake = () => {
+    setIsShaking(true);
+    scheduleTimer(() => setIsShaking(false), 500);
+  };
+
+  const recordUnlockedEnding = (endingId: EndingId) => {
+    setUnlockedEndings((prev) => {
+      if (prev.includes(endingId)) {
+        setIsNewUnlock(false);
+        return prev;
+      }
+      const next = [...prev, endingId];
+      setIsNewUnlock(true);
+      try {
+        window.localStorage.setItem(STORAGE_KEY_ENDINGS, JSON.stringify(next));
+      } catch {
+        // Ignore storage quota / private-mode errors
+      }
+      return next;
+    });
+  };
+
+  const finishCycle = (finalState: GameState) => {
+    const endingId = resolveEndingId(finalState);
+    if (endingId === 'hacker') {
+      playTone('hack', muted);
+    } else if (endingId === 'ghost' || endingId === 'cartel') {
+      playTone('win', muted);
+    } else {
+      playTone('fail', muted);
+    }
+    recordUnlockedEnding(endingId);
+    setScreen('RESULT');
+  };
+
   const startGame = () => {
     clearPendingTimers();
-    setGame(INITIAL_STATE);
+    setGame(INITIAL_GAME);
     setToast(null);
-    setShowPatchModal(false);
-    setPatchImpactLost100(false);
+    setActiveTwist(null);
     setIsShaking(false);
+    setIsNewUnlock(false);
     setScreen('PLAYING');
     playTone('pick', muted);
   };
 
+  const handleResetCollection = () => {
+    setUnlockedEndings([]);
+    setIsNewUnlock(false);
+    try {
+      window.localStorage.removeItem(STORAGE_KEY_ENDINGS);
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
   const handlePick = (id: ActionId) => {
-    if (game.ballsLeft <= 0 || showPatchModal) return;
+    if (game.ballsLeft <= 0 || activeTwist) return;
 
     const actionMeta = ACADEMIC_ACTIONS.find((a) => a.id === id);
     if (!actionMeta) return;
     if (!actionMeta.repeatable && game.picks.includes(id)) return;
 
-    const nextBallsLeft = game.ballsLeft - 1;
-    let nextPoints = game.points;
-    let nextVisibility = game.visibility;
-    let nextHasPreprint = game.hasPreprint;
-    let nextHas140 = game.has140;
-    let nextHasPaywall200 = game.hasPaywall200;
-    let nextHasSalami = game.hasSalami;
+    const next: GameState = {
+      ...game,
+      ballsLeft: game.ballsLeft - 1,
+      picks: [...game.picks, id],
+    };
+
     let nextToast: ToastFeedback;
+    let triggerScoopOnThisPick = false;
+    let scoopVenueName = '';
+    let scoopVenuePts = 0;
 
     if (id === 'preprint') {
-      nextHasPreprint = true;
-      nextVisibility = Math.min(100, nextVisibility + 55);
+      next.hasPreprint = true;
+      next.visibility = clamp(next.visibility + 55);
+      next.credibility = clamp(next.credibility + 5);
       nextToast = {
-        lead: '⚡ +0 Ministry Points!',
-        body: 'Your Dean asks:',
-        italicNote: '"Great downloads, but where are the spreadsheet points?!"',
+        lead: '⚡ +0 Ministry Points · DOI Shield Active!',
+        body: 'Your Dean frowns, but you unlocked priority proof & NCN Plan S Green OA.',
+        tone: 'shield',
       };
     } else if (id === 'j140') {
-      nextHas140 = true;
-      const ptsAdded = game.nerfed ? 40 : 140;
-      nextPoints += ptsAdded;
-      nextVisibility = Math.min(100, nextVisibility + 10);
-      nextToast = {
-        lead: `📘 Caught! +${ptsAdded} pts added.`,
-        body: 'Now waiting 18–24 months for the gatekeeper...',
-      };
+      next.has140 = true;
+      const ptsAdded = next.nerfed ? 40 : 140;
+      next.points += ptsAdded;
+      next.visibility = clamp(next.visibility + 10);
+      next.credibility = clamp(next.credibility - 5);
+
+      if (next.hasPreprint && !next.scoopResolved) {
+        next.scoopResolved = true;
+        next.visibility = clamp(next.visibility + 15);
+        next.credibility = clamp(next.credibility + 10);
+        nextToast = {
+          lead: `🛡️ DOI Shield Blocked Reviewer #2! (+${ptsAdded} pts)`,
+          body: 'A rival tried to scoop you during peer review, but your Preprint timestamp proved priority!',
+          tone: 'shield',
+        };
+      } else {
+        if (!next.hasPreprint && !next.scoopResolved) {
+          triggerScoopOnThisPick = true;
+          scoopVenueName = '140-pt International Journal';
+          scoopVenuePts = ptsAdded;
+        }
+        nextToast = {
+          lead: `📘 Submitted! +${ptsAdded} pts queued.`,
+          body: 'Now waiting 18–24 months for the gatekeeper...',
+          tone: 'warn',
+        };
+      }
     } else if (id === 'dragon200') {
-      nextHasPaywall200 = true;
-      nextPoints += 200;
-      nextVisibility = Math.min(100, nextVisibility + 5);
+      next.hasPaywall200 = true;
+      next.points += 200;
+      next.visibility = clamp(next.visibility + 5);
+      next.credibility = clamp(next.credibility - 10);
+
+      if (next.hasPreprint && !next.scoopResolved) {
+        next.scoopResolved = true;
+        next.visibility = clamp(next.visibility + 15);
+        next.credibility = clamp(next.credibility + 10);
+        nextToast = {
+          lead: '🛡️ +200 pts & DOI Shield Held!',
+          body: 'Paywall locked the journal version, but your Preprint beat Reviewer #2 and keeps NCN & LLMs happy.',
+          tone: 'shield',
+        };
+      } else {
+        if (!next.hasPreprint && !next.scoopResolved) {
+          triggerScoopOnThisPick = true;
+          scoopVenueName = '200-pt Paywall Leviathan';
+          scoopVenuePts = 200;
+        }
+        nextToast = {
+          lead: '🐉 +200 pts! Huge Ministry score!',
+          body: 'Locked behind a €39.95 paywall & fails NCN Open Access.',
+          tone: 'warn',
+        };
+      }
+    } else if (id === 'special140') {
+      next.hasSpecial140 = true;
+      next.points += 140;
+      next.visibility = clamp(next.visibility + 15);
+      next.credibility = clamp(next.credibility - 15);
       nextToast = {
-        lead: '🐉 +200 pts! Huge Ministry score!',
-        body: 'Locked behind a $39.95 commercial paywall.',
+        lead: '💸 +140 pts in 14 days!',
+        body: 'Fastest peer review ever. €2,500 APC invoice forwarded to NCN...',
+        tone: 'warn',
       };
     } else if (id === 'salami') {
-      nextHasSalami += 1;
-      nextPoints += 70;
-      nextVisibility = Math.min(100, nextVisibility + 5);
+      next.hasSalami += 1;
+      next.points += 70;
+      next.visibility = clamp(next.visibility + 5);
+      next.credibility = clamp(next.credibility - 15);
       nextToast = {
-        lead: `🍕 +70 pts! Paper #${nextHasSalami} published.`,
-        body: 'Zero scientific novelty, high efficiency.',
+        lead: `🍕 +70 pts! Salami Paper #${next.hasSalami} published.`,
+        body: 'Zero novelty, high efficiency, -15% Credibility.',
+        tone: 'warn',
       };
     } else {
-      nextPoints += 25;
-      nextVisibility = Math.min(100, nextVisibility + 10);
+      next.points += 25;
+      next.visibility = clamp(next.visibility + 10);
+      next.credibility = clamp(next.credibility - 10);
       nextToast = {
         lead: '✈️ +25 pts!',
-        body: 'Exhausted from committees & flights, tiny dent in the quota.',
+        body: 'Exhausted from flights & Szkoła Doktorska committees (-10% Sanity).',
+        tone: 'neutral',
       };
     }
 
     playTone('pick', muted);
     setToast(nextToast);
+    setGame(next);
 
-    const willTriggerPatch = nextBallsLeft === 1 && !game.nerfed;
-
-    setGame({
-      ...game,
-      ballsLeft: nextBallsLeft,
-      points: nextPoints,
-      visibility: nextVisibility,
-      picks: [...game.picks, id],
-      hasPreprint: nextHasPreprint,
-      has140: nextHas140,
-      hasPaywall200: nextHasPaywall200,
-      hasSalami: nextHasSalami,
-    });
-
-    if (willTriggerPatch) {
+    // Determine which plot twist triggers after this pick (at most 1 modal per turn)
+    if (next.ballsLeft <= 2 && !next.nerfed) {
+      // YEAR 2 CHECKPOINT: Szkoła Doktorska Ocena Śródokresowa + Ministerial Patch
       scheduleTimer(() => {
         playTone('nerf', muted);
-        setPatchImpactLost100(nextHas140);
-        setGame((prev) => ({
-          ...prev,
+        const passedMidterm = next.points >= 70;
+        const lost100 = next.has140;
+        const patchedState: GameState = {
+          ...next,
           nerfed: true,
-          points: nextHas140 ? Math.max(0, prev.points - 100) : prev.points,
-        }));
-        if (nextHas140) {
-          setIsShaking(true);
-          scheduleTimer(() => setIsShaking(false), 500);
+          passedMidterm,
+          points: lost100 ? Math.max(0, next.points - 100) : next.points,
+          credibility: passedMidterm
+            ? next.credibility
+            : clamp(next.credibility - 15),
+        };
+        if (lost100 || !passedMidterm) {
+          triggerShake();
         }
-        setShowPatchModal(true);
-      }, 340);
-    } else if (nextBallsLeft === 0) {
+        setGame(patchedState);
+        setActiveTwist({
+          type: 'MIDTERM_AND_PATCH',
+          lost100OnPatch: lost100,
+          passedMidterm,
+        });
+      }, 360);
+    } else if (triggerScoopOnThisPick) {
+      // ROUTE 1: Reviewer #2 & The Scoop
       scheduleTimer(() => {
-        if (nextPoints < 200) {
-          playTone('fail', muted);
-        } else if (nextHasPreprint) {
-          playTone('hack', muted);
-        } else {
-          playTone('win', muted);
-        }
-        setScreen('RESULT');
+        playTone('nerf', muted);
+        triggerShake();
+        setActiveTwist({
+          type: 'SCOOP_TRAP',
+          targetVenueName: scoopVenueName,
+          targetVenuePts: scoopVenuePts,
+          ballsAvailable: next.ballsLeft,
+        });
+      }, 360);
+    } else if (
+      next.ballsLeft <= 1 &&
+      next.hasSpecial140 &&
+      !next.specialDelisted
+    ) {
+      // ROUTE 2: Clarivate Delisting & €2,500 NCN APC Rejection
+      scheduleTimer(() => {
+        playTone('nerf', muted);
+        triggerShake();
+        const delistedState: GameState = {
+          ...next,
+          specialDelisted: true,
+          wasDelisted: true,
+          points: Math.max(0, next.points - 120),
+        };
+        setGame(delistedState);
+        setActiveTwist({
+          type: 'DELIST_APC',
+        });
+      }, 360);
+    } else if (next.ballsLeft === 1 && !next.cartelResolved) {
+      // ROUTE 3: Senior Professor's Co-Authorship Cartel Offer vs NCN Audit
+      scheduleTimer(() => {
+        playTone('pick', muted);
+        setActiveTwist({
+          type: 'CARTEL_OFFER',
+        });
+      }, 360);
+    } else if (next.ballsLeft === 0) {
+      scheduleTimer(() => {
+        finishCycle(next);
       }, 420);
     }
   };
 
-  const handleUnlockCheat = () => {
-    playTone('hack', muted);
-    setGame((prev) => ({ ...prev, cheatUnlocked: true }));
+  // --- PLOT TWIST HANDLERS ---
+
+  const handleScoopBurnBall = () => {
+    playTone('nerf', muted);
+    const updated: GameState = {
+      ...game,
+      ballsLeft: Math.max(0, game.ballsLeft - 1),
+      credibility: clamp(game.credibility - 20),
+      scoopResolved: true,
+      wasScooped: true,
+    };
+    setGame(updated);
+    setActiveTwist(null);
+    setToast({
+      lead: '🔥 Burned 1 Action Ball on Major Revisions!',
+      body: 'Points salvaged, but 6 months of crunch cost -20% Sanity.',
+      tone: 'warn',
+    });
+    if (updated.ballsLeft === 0) {
+      scheduleTimer(() => finishCycle(updated), 380);
+    }
   };
 
-  const progressPct = Math.min(100, Math.round((game.points / 200) * 100));
-  const usedCount = 3 - game.ballsLeft;
-  const clampedVisibility = Math.min(100, game.visibility);
+  const handleScoopWithdraw = () => {
+    playTone('fail', muted);
+    const lostPts = activeTwist?.targetVenuePts ?? 140;
+    const withdrew140 = activeTwist?.targetVenueName?.includes('140');
+    const updated: GameState = {
+      ...game,
+      points: Math.max(0, game.points - lostPts),
+      has140: withdrew140 ? false : game.has140,
+      hasPaywall200: !withdrew140 ? false : game.hasPaywall200,
+      credibility: clamp(game.credibility - 15),
+      scoopResolved: true,
+      wasScooped: true,
+    };
+    setGame(updated);
+    setActiveTwist(null);
+    setToast({
+      lead: `⏰ Scooped! Withdrew manuscript (-${lostPts} pts).`,
+      body: 'You saved your Action Ball, but lost priority to the rival lab.',
+      tone: 'warn',
+    });
+    if (updated.ballsLeft === 0) {
+      scheduleTimer(() => finishCycle(updated), 380);
+    }
+  };
 
-  const isHackerEnding =
-    game.cheatUnlocked || (game.points >= 200 && game.hasPreprint);
-  const isFiredEnding = !isHackerEnding && game.points < 200;
-  const isGhostEnding = !isHackerEnding && game.points >= 200 && !game.hasPreprint;
+  const handleAcceptMidtermPatch = () => {
+    setActiveTwist(null);
+    if (game.ballsLeft === 0) {
+      scheduleTimer(() => finishCycle(game), 320);
+    }
+  };
+
+  const handleDelistPayOutOfPocket = () => {
+    playTone('nerf', muted);
+    const updated: GameState = {
+      ...game,
+      credibility: clamp(game.credibility - 25),
+    };
+    setGame(updated);
+    setActiveTwist(null);
+    setToast({
+      lead: '💸 Paid €2,500 out of pocket for 20 pts!',
+      body: 'Budget wiped out and RDN Habilitation flagged the delisted venue.',
+      tone: 'warn',
+    });
+    if (updated.ballsLeft === 0) {
+      scheduleTimer(() => finishCycle(updated), 380);
+    }
+  };
+
+  const handleDelistRetract = () => {
+    playTone('fail', muted);
+    const updated: GameState = {
+      ...game,
+      points: Math.max(0, game.points - 20),
+      credibility: clamp(game.credibility - 15),
+    };
+    setGame(updated);
+    setActiveTwist(null);
+    setToast({
+      lead: '📄 Paper retracted (-20 remaining pts).',
+      body: 'Saved €2,500, but lost an Action Ball & took a credibility hit.',
+      tone: 'warn',
+    });
+    if (updated.ballsLeft === 0) {
+      scheduleTimer(() => finishCycle(updated), 380);
+    }
+  };
+
+  const handleCartelAccept = () => {
+    playTone('win', muted);
+    const updated: GameState = {
+      ...game,
+      points: game.points + 120,
+      credibility: clamp(game.credibility - 45),
+      cartelResolved: true,
+      joinedCartel: true,
+    };
+    setGame(updated);
+    setActiveTwist(null);
+    setToast({
+      lead: '🃏 Cartel Pact Signed! +120 Ministry Points!',
+      body: 'Spreadsheet looks amazing — Credibility tanked (-45%).',
+      tone: 'warn',
+    });
+  };
+
+  const handleCartelDecline = () => {
+    playTone('pick', muted);
+    const updated: GameState = {
+      ...game,
+      credibility: clamp(game.credibility + 10),
+      cartelResolved: true,
+      joinedCartel: false,
+    };
+    setGame(updated);
+    setActiveTwist(null);
+    setToast({
+      lead: '✓ Declined Co-Authorship Cartel (+10% Credibility).',
+      body: '1 Action Ball left for Year 4 — finish strong!',
+      tone: 'shield',
+    });
+  };
+
+  const handleUnlockCheat = () => {
+    playTone('hack', muted);
+    const updated: GameState = {
+      ...game,
+      cheatUnlocked: true,
+      hasPreprint: true,
+    };
+    setGame(updated);
+    recordUnlockedEnding('hacker');
+  };
+
+  // Derived HUD metrics
+  const progressPct = Math.min(100, Math.round((game.points / 200) * 100));
+  const currentYear = Math.min(TOTAL_BALLS, TOTAL_BALLS - game.ballsLeft + 1);
+  const clampedVisibility = clamp(game.visibility);
+  const clampedCredibility = clamp(game.credibility);
+  const credibilityStateLabel =
+    clampedCredibility >= 70
+      ? 'Healthy'
+      : clampedCredibility >= 40
+        ? 'Strained'
+        : 'Critical';
+
+  const currentEndingId = resolveEndingId(game);
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-3.5 sm:p-6">
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-3 sm:p-6">
       <div className="grain-overlay" aria-hidden="true" />
 
       <main
-        className={`relative z-10 w-full max-w-[460px] bg-[#FAF6F2] rounded-[26px] px-[18px] pt-5 pb-6 shadow-[0_20px_50px_rgba(45,20,20,0.22)] border border-white/65 transition-transform ${
+        className={`relative z-10 w-full max-w-[490px] bg-[#FAF6F2] rounded-[26px] px-[18px] pt-4 pb-6 shadow-[0_20px_50px_rgba(45,20,20,0.22)] border border-white/65 transition-transform ${
           isShaking ? 'animate-shake' : ''
         }`}
       >
-        {/* Subtle utility bar inside card */}
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <span className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#5C5752]">
+        {/* Top Utility Bar */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <span className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#5C5752] truncate">
             Interactive Simulation · Poland
           </span>
-          <div className="flex items-center gap-1.5">
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowCollection(true)}
+              aria-label={`Trainer Card Collection: ${unlockedEndings.length} of ${ENDINGS_CATALOG.length} endings unlocked`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold text-[#1E1D1C] bg-white/80 border border-[#E5DDD5] hover:bg-white transition-colors cursor-pointer whitespace-nowrap tabular-nums"
+            >
+              <Trophy className="w-3.5 h-3.5 text-[#C98A1B]" aria-hidden="true" />
+              <span>
+                {unlockedEndings.length}/{ENDINGS_CATALOG.length}
+              </span>
+            </button>
+
             {screen === 'PLAYING' && (
               <button
                 type="button"
                 onClick={startGame}
                 title="Restart Cycle"
                 aria-label="Restart Cycle"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11.5px] font-semibold text-[#5C5752] hover:text-[#1E1D1C] hover:bg-black/5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C] cursor-pointer"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#5C5752] hover:text-[#1E1D1C] hover:bg-black/5 transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Reset</span>
               </button>
             )}
+
             <button
               type="button"
               onClick={() => setMuted((m) => !m)}
               title={muted ? 'Unmute sound effects' : 'Mute sound effects'}
               aria-label={muted ? 'Unmute sound effects' : 'Mute sound effects'}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#5C5752] hover:text-[#1E1D1C] hover:bg-black/5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C] cursor-pointer"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#5C5752] hover:text-[#1E1D1C] hover:bg-black/5 transition-colors cursor-pointer"
             >
               {muted ? (
                 <VolumeX className="w-4 h-4" aria-hidden="true" />
@@ -237,54 +585,93 @@ export default function App() {
         {/* SCREEN 1: INTRO */}
         {screen === 'INTRO' && (
           <section aria-labelledby="intro-title">
-            <div className="inline-block text-[11px] font-bold tracking-[0.06em] uppercase px-2.5 py-1 rounded-md bg-[#F7D16A] text-[#1E1D1C] mb-2.5">
-              4-Year Academic Survival
+            <div className="inline-block text-[11px] font-bold tracking-[0.06em] uppercase px-2.5 py-1 rounded-md bg-[#F7D16A] text-[#1E1D1C] mb-2">
+              Extended Edition · 6 Endings
             </div>
             <h1
               id="intro-title"
-              className="text-[26px] leading-[1.15] font-extrabold tracking-[-0.02em] text-[#1E1D1C] mb-2 text-balance"
+              className="text-[25px] sm:text-[27px] leading-[1.14] font-extrabold tracking-[-0.02em] text-[#1E1D1C] mb-2 text-balance"
             >
               Academic Pokémon Go:
               <br />
               Survive Punktoza
             </h1>
-            <p className="text-[14.5px] leading-[1.48] text-[#5C5752]">
-              You just heard why preprints are faster, open, and AI-ready. Now
-              experience why rational researchers still avoid them.
+            <p className="text-[14px] leading-[1.48] text-[#5C5752]">
+              You know preprints are faster, open, and AI-ready. Now survive 4
+              years of Polish academic evaluation—complete with{' '}
+              <strong>Reviewer #2</strong>, <strong>delisted journals</strong>,{' '}
+              <strong>NCN audits</strong>, and{' '}
+              <strong>Ocena Śródokresowa</strong>.
             </p>
 
+            {/* Track selector (functional segmented control) */}
+            <div className="mt-3.5">
+              <div className="text-[11.5px] font-bold text-[#5C5752] mb-1.5">
+                Choose Your Academic Track:
+              </div>
+              <div
+                className="grid grid-cols-2 gap-1 p-1 bg-[#EDE6DE] rounded-xl"
+                role="tablist"
+                aria-label="Academic Track"
+              >
+                {(['phd', 'habilitation'] as CareerTrack[]).map((t) => {
+                  const active = track === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setTrack(t)}
+                      className={`py-2 px-2.5 rounded-lg text-[12.5px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        active
+                          ? 'bg-white text-[#1E1D1C] shadow-xs'
+                          : 'text-[#5C5752] hover:text-[#1E1D1C]'
+                      }`}
+                    >
+                      {CAREER_TRACKS[t].shortLabel}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[12px] text-[#5C5752] mt-1.5">
+                {CAREER_TRACKS[track].stakesNote}
+              </p>
+            </div>
+
             <div className="bg-white border-[1.5px] border-[#EAE2DA] rounded-2xl p-3.5 my-3.5">
-              <strong className="block text-[13.5px] font-bold text-[#1E1D1C]">
+              <strong className="block text-[13px] font-bold text-[#1E1D1C]">
                 Your 4-Year Evaluation Rules:
               </strong>
-              <ul className="mt-2 grid gap-2">
-                <li className="text-[13.5px] leading-[1.4] flex gap-2.5 items-start text-[#1E1D1C]">
-                  <span className="text-[16px] shrink-0" aria-hidden="true">
+              <ul className="mt-2 grid gap-1.5">
+                <li className="text-[13px] leading-[1.4] flex gap-2 items-start text-[#1E1D1C]">
+                  <span className="shrink-0" aria-hidden="true">
                     🎯
                   </span>
                   <span>
-                    <strong>Goal:</strong> Reach{' '}
-                    <strong>200 Ministerial Points</strong> to keep your job and
-                    department funding.
+                    <strong>Goal:</strong> Hit{' '}
+                    <strong>200 Ministerial Points</strong> (and 70+ by Year 2
+                    Mid-Term) without tanking your Credibility.
                   </span>
                 </li>
-                <li className="text-[13.5px] leading-[1.4] flex gap-2.5 items-start text-[#1E1D1C]">
-                  <span className="text-[16px] shrink-0" aria-hidden="true">
+                <li className="text-[13px] leading-[1.4] flex gap-2 items-start text-[#1E1D1C]">
+                  <span className="shrink-0" aria-hidden="true">
                     🔴
                   </span>
                   <span>
-                    <strong>Ammo:</strong> You only have{' '}
-                    <strong>3 Action Balls</strong> (time, budget &amp; sanity).
+                    <strong>Ammo:</strong> You have{' '}
+                    <strong>4 Action Balls</strong> (1 per year) to navigate
+                    academic plot twists.
                   </span>
                 </li>
-                <li className="text-[13.5px] leading-[1.4] flex gap-2.5 items-start text-[#1E1D1C]">
-                  <span className="text-[16px] shrink-0" aria-hidden="true">
-                    📊
+                <li className="text-[13px] leading-[1.4] flex gap-2 items-start text-[#1E1D1C]">
+                  <span className="shrink-0" aria-hidden="true">
+                    🏆
                   </span>
                   <span>
-                    <strong>The Catch:</strong> Points come strictly from a
-                    central government spreadsheet — not from peers reading your
-                    work.
+                    <strong>Collect:</strong> Unlock all{' '}
+                    <strong>6 Trainer Card Endings</strong> ({unlockedEndings.length}
+                    /6 discovered).
                   </span>
                 </li>
               </ul>
@@ -293,7 +680,7 @@ export default function App() {
             <button
               type="button"
               onClick={startGame}
-              className="w-full rounded-[14px] py-[15px] px-[18px] text-[15px] font-bold bg-[#1E1D1C] text-white hover:bg-[#302E2C] active:scale-[0.985] transition-all flex justify-center items-center gap-2 mt-3 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C]"
+              className="w-full rounded-[14px] py-[14px] px-[18px] text-[15px] font-bold bg-[#1E1D1C] text-white hover:bg-[#302E2C] active:scale-[0.985] transition-all flex justify-center items-center gap-2 mt-2 cursor-pointer whitespace-nowrap"
             >
               Start 4-Year Cycle →
             </button>
@@ -308,7 +695,7 @@ export default function App() {
         {screen === 'PLAYING' && (
           <section aria-label="4-Year Evaluation Gameplay">
             {/* HUD */}
-            <div className="bg-white border-[1.5px] border-[#EAE2DA] rounded-2xl px-3.5 py-3 mb-3.5">
+            <div className="bg-white border-[1.5px] border-[#EAE2DA] rounded-2xl px-3.5 py-3 mb-3">
               <div className="flex justify-between items-center mb-2 gap-2">
                 <div className="text-[15px] font-extrabold text-[#1E1D1C]">
                   Ministry Score:{' '}
@@ -324,16 +711,16 @@ export default function App() {
                 </div>
 
                 <div
-                  className="flex items-center gap-1.5 text-[12px] font-bold text-[#5C5752]"
-                  aria-label={`${game.ballsLeft} of 3 Action Balls remaining`}
+                  className="flex items-center gap-1 text-[11.5px] font-bold text-[#5C5752]"
+                  aria-label={`${game.ballsLeft} of ${TOTAL_BALLS} Action Balls remaining`}
                 >
-                  <span>Balls:</span>
-                  {[1, 2, 3].map((ballNum) => {
+                  <span className="mr-0.5">Balls:</span>
+                  {[1, 2, 3, 4].map((ballNum) => {
                     const isUsed = ballNum > game.ballsLeft;
                     return (
                       <div
                         key={ballNum}
-                        className={`w-4 h-4 rounded-full border-2 border-[#1E1D1C] relative transition-all duration-200 ${
+                        className={`w-[15px] h-[15px] rounded-full border-2 border-[#1E1D1C] relative transition-all duration-200 ${
                           isUsed ? 'opacity-20 scale-80' : 'opacity-100 scale-100'
                         }`}
                         style={{
@@ -341,16 +728,16 @@ export default function App() {
                             'linear-gradient(to bottom, #EA6C6C 50%, #FFFFFF 50%)',
                         }}
                       >
-                        <span className="absolute w-[5px] h-[5px] bg-white border-[1.5px] border-[#1E1D1C] rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                        <span className="absolute w-[4.5px] h-[4.5px] bg-white border-[1.5px] border-[#1E1D1C] rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Progress Bar */}
+              {/* Progress Bar with subtle 70-pt Mid-Term marker */}
               <div
-                className="w-full h-2.5 bg-[#EFE9E3] rounded-full overflow-hidden"
+                className="relative w-full h-2.5 bg-[#EFE9E3] rounded-full overflow-hidden"
                 role="progressbar"
                 aria-valuenow={game.points}
                 aria-valuemin={0}
@@ -366,16 +753,47 @@ export default function App() {
                         : 'linear-gradient(90deg, #F4A97B, #0A5EB0)',
                   }}
                 />
+                {!game.nerfed && (
+                  <div
+                    title="Year 2 Mid-Term Threshold (70 pts)"
+                    className="absolute top-0 bottom-0 w-[2px] bg-[#1E1D1C]/35"
+                    style={{ left: '35%' }}
+                  />
+                )}
               </div>
 
-              <div className="flex justify-between items-center mt-2 text-[11.5px] font-semibold text-[#5C5752] tabular-nums">
-                <span>AI &amp; Human Visibility: {clampedVisibility}%</span>
+              {/* 3-stat compact HUD footer */}
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mt-2 text-[11.5px] font-semibold text-[#5C5752] tabular-nums">
+                <span>AI &amp; Open: {clampedVisibility}%</span>
+                <span aria-hidden="true">·</span>
+                <span
+                  className={
+                    clampedCredibility < 40
+                      ? 'text-[#B81D1D] font-bold'
+                      : clampedCredibility < 70
+                        ? 'text-[#B45309] font-bold'
+                        : 'text-[#1E1D1C]'
+                  }
+                >
+                  Credibility: {clampedCredibility}% ({credibilityStateLabel})
+                </span>
+                <span aria-hidden="true">·</span>
                 <span>
                   {game.ballsLeft > 0
-                    ? `Pick ${usedCount + 1} of 3`
-                    : 'Cycle Complete'}
+                    ? `Yr ${currentYear}/${TOTAL_BALLS}`
+                    : 'Done'}
                 </span>
               </div>
+
+              {/* Active Preprint Shield status line */}
+              {game.hasPreprint && (
+                <div className="mt-2 pt-1.5 border-t border-[#F0E9E2] flex items-center gap-1.5 text-[11px] font-bold text-[#2E8555]">
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <span>
+                    DOI Priority Shield Active · NCN Plan S Green OA Ready
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Feedback Toast */}
@@ -383,7 +801,11 @@ export default function App() {
               <div
                 role="status"
                 aria-live="polite"
-                className="text-[12.5px] font-medium px-3 py-2.5 rounded-xl mb-3 bg-[#FFF5D6] border border-[#F0D47E] text-[#5E4306]"
+                className={`text-[12.5px] font-medium px-3 py-2 rounded-xl mb-2.5 border ${
+                  toast.tone === 'shield'
+                    ? 'bg-[#EEF8F2] border-[#A7DEC0] text-[#184C31]'
+                    : 'bg-[#FFF5D6] border-[#F0D47E] text-[#5E4306]'
+                }`}
               >
                 <strong className="font-bold">{toast.lead}</strong> {toast.body}{' '}
                 {toast.italicNote && <em>{toast.italicNote}</em>}
@@ -391,18 +813,20 @@ export default function App() {
             )}
 
             {/* Wild Academic Action Cards */}
-            <div className="grid gap-2.5">
+            <div className="grid gap-2">
               {ACADEMIC_ACTIONS.map((item) => {
                 const alreadyPicked =
                   !item.repeatable && game.picks.includes(item.id);
                 const pickCount = game.picks.filter((p) => p === item.id).length;
 
                 let badgeClasses =
-                  'text-[11px] font-extrabold px-2 py-0.5 rounded-md whitespace-nowrap shrink-0 tabular-nums ';
+                  'text-[10.5px] font-extrabold px-2 py-0.5 rounded-md whitespace-nowrap shrink-0 tabular-nums ';
                 if (item.badgeStyle === 'zero') {
                   badgeClasses += 'bg-[#FFF2C9] text-[#7C5800]';
                 } else if (item.badgeStyle === 'high') {
                   badgeClasses += 'bg-[#1E1D1C] text-white';
+                } else if (item.badgeStyle === 'express') {
+                  badgeClasses += 'bg-[#FFF3E0] text-[#B45309]';
                 } else if (item.badgeStyle === 'mid') {
                   badgeClasses += 'bg-[#FCE0EA] text-[#8A1E46]';
                 } else {
@@ -413,16 +837,16 @@ export default function App() {
                   <button
                     key={item.id}
                     type="button"
-                    disabled={alreadyPicked || game.ballsLeft <= 0}
+                    disabled={alreadyPicked || game.ballsLeft <= 0 || !!activeTwist}
                     onClick={() => handlePick(item.id)}
-                    className={`w-full bg-white border-[1.5px] border-[#EAE2DA] rounded-2xl px-3.5 py-3 flex items-center gap-3 text-left transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C] ${
+                    className={`w-full bg-white border-[1.5px] border-[#EAE2DA] rounded-2xl px-3 py-2.5 flex items-center gap-3 text-left transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C] ${
                       alreadyPicked || game.ballsLeft <= 0
                         ? 'opacity-45 cursor-not-allowed'
                         : 'cursor-pointer hover:border-[#C7BBB0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] active:scale-[0.985]'
                     }`}
                   >
                     <div
-                      className={`w-[46px] h-[46px] rounded-[13px] flex items-center justify-center text-[24px] shrink-0 ${item.avatarBg}`}
+                      className={`w-[42px] h-[42px] rounded-[12px] flex items-center justify-center text-[22px] shrink-0 ${item.avatarBg}`}
                       aria-hidden="true"
                     >
                       {item.avatar}
@@ -430,10 +854,10 @@ export default function App() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center gap-2 mb-0.5">
-                        <span className="text-[14.5px] font-extrabold text-[#1E1D1C] truncate">
+                        <span className="text-[14px] font-extrabold text-[#1E1D1C] truncate">
                           {item.name}
                           {pickCount > 0 && item.repeatable && (
-                            <span className="ml-1.5 text-[11px] font-bold text-[#5C5752]">
+                            <span className="ml-1 text-[11px] font-bold text-[#5C5752]">
                               ×{pickCount}
                             </span>
                           )}
@@ -441,11 +865,20 @@ export default function App() {
 
                         {item.id === 'j140' && game.nerfed ? (
                           <div className="flex items-center gap-1 shrink-0 tabular-nums">
-                            <span className="text-[11px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#FFE2E2] text-[#B81D1D] line-through">
+                            <span className="text-[10.5px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#FFE2E2] text-[#B81D1D] line-through">
                               140
                             </span>
-                            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-[#B81D1D] text-white">
+                            <span className="text-[10.5px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#B81D1D] text-white">
                               40 PTS!
+                            </span>
+                          </div>
+                        ) : item.id === 'special140' && game.specialDelisted ? (
+                          <div className="flex items-center gap-1 shrink-0 tabular-nums">
+                            <span className="text-[10.5px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#FFE2E2] text-[#B81D1D] line-through">
+                              140
+                            </span>
+                            <span className="text-[10.5px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#B45309] text-white">
+                              DELISTED
                             </span>
                           </div>
                         ) : (
@@ -453,9 +886,9 @@ export default function App() {
                         )}
                       </div>
 
-                      <p className="text-[12px] leading-[1.35] text-[#5C5752]">
+                      <p className="text-[11.5px] leading-[1.35] text-[#5C5752]">
                         {alreadyPicked
-                          ? 'Already in your Pokédex for this cycle.'
+                          ? 'Already attempted in this 4-year cycle.'
                           : item.desc}
                       </p>
                     </div>
@@ -468,276 +901,56 @@ export default function App() {
 
         {/* SCREEN 3: RESULTS */}
         {screen === 'RESULT' && (
-          <section aria-label="Evaluation Outcome">
-            {isFiredEnding && (
-              <>
-                <div className="rounded-[20px] px-[18px] py-5 mb-3.5 bg-[#FFF0F0] border-2 border-[#EA6C6C]">
-                  <span className="inline-block text-[11px] font-bold tracking-[0.06em] uppercase px-2.5 py-1 rounded-md bg-[#B81D1D] text-white mb-2.5">
-                    EVALUATION FAILED
-                  </span>
-                  <h2 className="text-[21px] leading-[1.2] font-extrabold tracking-[-0.02em] text-[#1E1D1C] mb-1.5">
-                    Contract Terminated!
-                  </h2>
-                  <p className="text-[14px] leading-[1.48] text-[#3D1F1F]">
-                    {game.hasPreprint ? (
-                      <>
-                        You followed the open-science ideal and shared
-                        preprints. AI &amp; peers loved it —{' '}
-                        <strong>
-                          but the Ministry spreadsheet says 0 points for
-                          preprints.
-                        </strong>
-                      </>
-                    ) : (
-                      <>
-                        Between committee grind and ministerial point nerfs, you
-                        missed the 200-point quota.
-                      </>
-                    )}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2.5 mt-3.5">
-                    <div className="bg-white/90 rounded-xl p-2.5 text-center text-[#1E1D1C]">
-                      <div className="text-[10.5px] uppercase font-bold opacity-75 mb-0.5">
-                        Ministry Score
-                      </div>
-                      <div className="text-[17px] font-extrabold text-[#B81D1D] tabular-nums">
-                        {game.points} / 200
-                      </div>
-                    </div>
-                    <div className="bg-white/90 rounded-xl p-2.5 text-center text-[#1E1D1C]">
-                      <div className="text-[10.5px] uppercase font-bold opacity-75 mb-0.5">
-                        AI &amp; Open Impact
-                      </div>
-                      <div className="text-[17px] font-extrabold tabular-nums">
-                        {clampedVisibility}%
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-[13.5px] leading-[1.48] text-[#5C5752]">
-                  <strong className="text-[#1E1D1C]">
-                    Now you feel Punktoza:
-                  </strong>{' '}
-                  Rational researchers don&apos;t avoid preprints because they
-                  hate open science. They avoid them because the scoreboard
-                  gives them <strong>zero survival points</strong>.
-                </p>
-              </>
-            )}
-
-            {isGhostEnding && (
-              <>
-                <div
-                  className="rounded-[20px] px-[18px] py-5 mb-3.5 text-white border-2 border-[#8E2331]"
-                  style={{
-                    background:
-                      'linear-gradient(165deg, #1E1B1B 0%, #4E1620 100%)',
-                  }}
-                >
-                  <span className="inline-block text-[11px] font-bold tracking-[0.06em] uppercase px-2.5 py-1 rounded-md bg-[#8E2331] text-white mb-2.5">
-                    GHOST STATUS UNLOCKED
-                  </span>
-                  <h2 className="text-[21px] leading-[1.2] font-extrabold tracking-[-0.02em] text-white mb-1.5">
-                    You Win Punktoza...
-                    <br />
-                    as a Ghost in the Cache!
-                  </h2>
-                  <p className="text-[14px] leading-[1.48] text-white/85 mt-1.5">
-                    Your Dean is thrilled! You hit{' '}
-                    <strong className="text-white">{game.points} points</strong>
-                    {game.hasSalami > 1
-                      ? ' by slicing your work into tiny pieces'
-                      : ' behind a commercial paywall'}
-                    .
-                  </p>
-                  <p className="text-[14px] leading-[1.48] text-white/85 mt-3">
-                    <strong className="text-white">The cost:</strong> Paywalls
-                    block web scrapers. LLMs &amp; OpenAIRE skip you completely.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2.5 mt-3.5">
-                    <div className="bg-white/10 border border-white/15 rounded-xl p-2.5 text-center text-white">
-                      <div className="text-[10.5px] uppercase font-bold opacity-75 mb-0.5">
-                        Ministry Score
-                      </div>
-                      <div className="text-[17px] font-extrabold text-[#7CE3A6] tabular-nums">
-                        {game.points} / 200 ✓
-                      </div>
-                    </div>
-                    <div className="bg-white/10 border border-white/15 rounded-xl p-2.5 text-center text-white">
-                      <div className="text-[10.5px] uppercase font-bold opacity-75 mb-0.5">
-                        AI &amp; Open Impact
-                      </div>
-                      <div className="text-[17px] font-extrabold text-[#FF8C94] tabular-nums">
-                        Ghost ({clampedVisibility}%)
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-[13.5px] leading-[1.48] text-[#5C5752]">
-                  Can you keep your 200 points <em>without</em> disappearing
-                  from the algorithmic future of science?
-                </p>
-              </>
-            )}
-
-            {isHackerEnding && (
-              <>
-                <div
-                  className="rounded-[20px] px-[18px] py-5 mb-3.5 border-2 border-[#E8AC41]"
-                  style={{
-                    background:
-                      'linear-gradient(155deg, #FFFDF7 0%, #FFF2C9 100%)',
-                  }}
-                >
-                  <span className="inline-block text-[11px] font-bold tracking-[0.06em] uppercase px-2.5 py-1 rounded-md bg-[#1E1D1C] text-[#F7D16A] mb-2.5">
-                    ⚡ CHEAT CODE ACTIVE
-                  </span>
-                  <h2 className="text-[21px] leading-[1.2] font-extrabold tracking-[-0.02em] text-[#1E1D1C] mb-1.5">
-                    {game.cheatUnlocked
-                      ? 'Dual-Type Evolution Unlocked!'
-                      : 'You Naturally Hacked the System!'}
-                  </h2>
-                  <p className="text-[14px] leading-[1.48] text-[#3C352B]">
-                    You used the{' '}
-                    <strong>Preprint as a Dual-Type Evolution</strong>:
-                  </p>
-
-                  <ul className="mt-2.5 grid gap-2">
-                    <li className="text-[13.5px] leading-[1.4] flex gap-2.5 items-start text-[#1E1D1C]">
-                      <span className="text-[16px] shrink-0" aria-hidden="true">
-                        1️⃣
-                      </span>
-                      <span>
-                        Upload <strong>Preprint first</strong> → instant DOI,
-                        immutable timestamp, +12 mo citations &amp; Open API for
-                        LLMs.
-                      </span>
-                    </li>
-                    <li className="text-[13.5px] leading-[1.4] flex gap-2.5 items-start text-[#1E1D1C]">
-                      <span className="text-[16px] shrink-0" aria-hidden="true">
-                        2️⃣
-                      </span>
-                      <span>
-                        Submit to the <strong>200-pt journal</strong> → collect
-                        the Ministry points so the system leaves you alone.
-                      </span>
-                    </li>
-                  </ul>
-
-                  <div className="grid grid-cols-2 gap-2.5 mt-3.5">
-                    <div className="bg-white/90 rounded-xl p-2.5 text-center text-[#1E1D1C]">
-                      <div className="text-[10.5px] uppercase font-bold opacity-75 mb-0.5">
-                        Ministry Score
-                      </div>
-                      <div className="text-[17px] font-extrabold text-[#2E8555] tabular-nums">
-                        {Math.max(200, game.points)} / 200 ✓
-                      </div>
-                    </div>
-                    <div className="bg-white/90 rounded-xl p-2.5 text-center text-[#1E1D1C]">
-                      <div className="text-[10.5px] uppercase font-bold opacity-75 mb-0.5">
-                        Open API &amp; AI
-                      </div>
-                      <div className="text-[17px] font-extrabold text-[#0A5EB0] tabular-nums">
-                        100% Live ⚡
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-[13.5px] leading-[1.48] text-center font-bold text-[#1E1D1C]">
-                  &ldquo;Collect the points if you must. But don&apos;t let your
-                  research become a ghost.&rdquo;
-                </p>
-              </>
-            )}
-
-            {/* Cheat Code Unlock CTA */}
-            {(isFiredEnding || isGhostEnding) && (
-              <button
-                type="button"
-                onClick={handleUnlockCheat}
-                className="w-full rounded-[14px] py-[15px] px-[18px] text-[14.5px] font-bold text-[#1E1D1C] shadow-[0_8px_20px_rgba(228,158,50,0.35)] hover:brightness-[1.03] active:scale-[0.985] transition-all flex justify-center items-center gap-2 mt-3.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C]"
-                style={{
-                  background: 'linear-gradient(135deg, #F7D16A, #E49E32)',
-                }}
-              >
-                ⚡ Use Cheat Code: Attach Preprint (Open API)
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={startGame}
-              className="w-full rounded-[14px] py-3 px-4 text-[14px] font-bold bg-transparent border-[1.5px] border-[#D8CFC6] text-[#1E1D1C] hover:bg-black/[0.03] active:scale-[0.985] transition-all flex justify-center items-center gap-2 mt-2.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C]"
-            >
-              ↻ Play Again (Try Another Strategy)
-            </button>
-
-            <p className="text-center text-[11px] text-[#5C5752] mt-3.5 opacity-85">
-              Show your Trainer Card to the person next to you!
-            </p>
-          </section>
+          <ResultView
+            summary={{
+              endingId: currentEndingId,
+              cheatUnlocked: game.cheatUnlocked,
+              points: game.points,
+              visibility: clampedVisibility,
+              credibility: clampedCredibility,
+              hasPreprint: game.hasPreprint,
+              hasSalami: game.hasSalami,
+              passedMidterm: game.passedMidterm,
+              ncnCompliant: game.hasPreprint || game.cheatUnlocked,
+              track,
+              unlockedCount: unlockedEndings.length,
+              isNewUnlock,
+            }}
+            onUnlockCheat={handleUnlockCheat}
+            onPlayAgain={startGame}
+            onOpenCollection={() => setShowCollection(true)}
+          />
         )}
       </main>
 
-      {/* MINISTERIAL PATCH MODAL */}
-      {showPatchModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="patch-modal-title"
-          className="fixed inset-0 bg-[#140E0E]/72 backdrop-blur-[4px] flex justify-center items-center p-[18px] z-50"
-        >
-          <div className="bg-white max-w-[390px] w-full rounded-[22px] px-5 py-[22px] text-center border-[3px] border-[#EA6C6C] shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
-            <span className="inline-block bg-[#B81D1D] text-white text-[11px] font-extrabold tracking-[0.08em] px-2.5 py-1 rounded-md mb-2.5">
-              BREAKING: MINISTERIAL PATCH UPDATE!
-            </span>
-            <h2
-              id="patch-modal-title"
-              className="text-[21px] leading-[1.2] font-extrabold tracking-[-0.02em] text-[#1E1D1C]"
-            >
-              Spreadsheet Edited Overnight!
-            </h2>
+      {/* PLOT-TWIST EVENT MODAL */}
+      {activeTwist && (
+        <EventModal
+          twist={activeTwist}
+          track={track}
+          hasPreprint={game.hasPreprint}
+          onScoopBurnBall={handleScoopBurnBall}
+          onScoopWithdraw={handleScoopWithdraw}
+          onAcceptMidtermPatch={handleAcceptMidtermPatch}
+          onDelistPayOutOfPocket={handleDelistPayOutOfPocket}
+          onDelistRetract={handleDelistRetract}
+          onCartelAccept={handleCartelAccept}
+          onCartelDecline={handleCartelDecline}
+        />
+      )}
 
-            {patchImpactLost100 ? (
-              <div className="text-[14px] leading-[1.48] text-[#1E1D1C] my-3 space-y-3">
-                <p>
-                  A new Minister updated the point list overnight! Your{' '}
-                  <strong>
-                    140-pt International Journal was NERFED to 40 pts (-100
-                    pts!)
-                  </strong>
-                  .
-                </p>
-                <p>
-                  Meanwhile, an obscure local journal jumped from 20 → 200 pts.
-                </p>
-              </div>
-            ) : (
-              <div className="text-[14px] leading-[1.48] text-[#1E1D1C] my-3 space-y-3">
-                <p>
-                  A new Minister updated the point list overnight! The{' '}
-                  <strong>
-                    140-pt International Journal just got NERFED to 40 pts
-                  </strong>
-                  , while an obscure local journal jumped to 200 pts.
-                </p>
-                <p>1 Action Ball left — choose wisely!</p>
-              </div>
-            )}
+      {/* TRAINER CARD COLLECTION MODAL */}
+      {showCollection && (
+        <CollectionModal
+          unlocked={unlockedEndings}
+          onClose={() => setShowCollection(false)}
+          onResetCollection={handleResetCollection}
+        />
+      )}
+    </div>
+  );
+}
 
-            <button
-              type="button"
-              onClick={() => setShowPatchModal(false)}
-              className="w-full rounded-[14px] py-[15px] px-[18px] text-[15px] font-bold bg-[#1E1D1C] text-white hover:bg-[#302E2C] active:scale-[0.985] transition-all flex justify-center items-center gap-2 mt-4 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C]"
-            >
-              Accept Reality &amp; Continue →
-            </button>
-          </div>
         </div>
       )}
     </div>
