@@ -42,6 +42,54 @@ export interface EndingMeta {
   summary: string;
 }
 
+export interface GlossaryItem {
+  term: string;
+  meaning: string;
+}
+
+export const GLOSSARY_TERMS: GlossaryItem[] = [
+  {
+    term: 'Punktoza ("Point-itis")',
+    meaning:
+      'Poland’s national evaluation system where researchers’ careers and department budgets depend strictly on collecting points from an official Ministry spreadsheet of journals.',
+  },
+  {
+    term: 'Mid-Term PhD Evaluation',
+    meaning:
+      'A mandatory Year 2 review in Polish Doctoral Schools (Ocena Śródokresowa). Falling behind on publication points puts your PhD stipend and continuation at risk.',
+  },
+  {
+    term: 'Habilitation (Tenure Review)',
+    meaning:
+      'A post-PhD senior academic qualification required for professorship in Central Europe, reviewed by a national promotion board.',
+  },
+  {
+    term: 'National Grant Agency (NCN) & Plan S',
+    meaning:
+      'Poland’s main public science funder (NCN) enforces Plan S: grant-funded articles must be freely readable online (Open Access) immediately upon publication.',
+  },
+  {
+    term: 'Preprint & DOI',
+    meaning:
+      'A full research manuscript posted openly online before journal peer review. It receives a DOI (Digital Object Identifier)—a permanent timestamped link proving you were first.',
+  },
+  {
+    term: 'Green Open Access (Green OA)',
+    meaning:
+      'Sharing a free preprint or repository copy alongside a traditional journal submission—satisfying funder Open Access rules at zero cost.',
+  },
+  {
+    term: 'Publishing Fee (APC)',
+    meaning:
+      'Article Processing Charge—an upfront fee (often €2,000–€3,000+) that commercial journals charge authors to make a paper Open Access.',
+  },
+  {
+    term: 'AI Tools & Open Indexes (LLMs & OpenAIRE)',
+    meaning:
+      'Large Language Models (like ChatGPT) and European open research catalogs (OpenAIRE). They index open preprints, while commercial paywalls block them completely.',
+  },
+];
+
 export const CAREER_TRACKS: Record<
   CareerTrack,
   {
@@ -53,30 +101,30 @@ export const CAREER_TRACKS: Record<
   }
 > = {
   phd: {
-    label: 'Szkoła Doktorska (PhD)',
-    shortLabel: 'Szkoła Doktorska',
+    label: 'Doctoral School (PhD)',
+    shortLabel: 'PhD Candidate',
     roleTitle: 'Doctoral Candidate',
-    midtermLabel: 'Ocena Śródokresowa (Mid-Term Evaluation)',
-    stakesNote: 'Pass Year 2 Ocena Śródokresowa & hit 200 pts to keep your stipend.',
+    midtermLabel: 'Mid-Term PhD Evaluation',
+    stakesNote: 'Pass the Year 2 Mid-Term Evaluation & hit 200 pts to keep your PhD stipend.',
   },
   habilitation: {
-    label: 'NCN & Habilitation',
-    shortLabel: 'NCN / Habilitation',
-    roleTitle: 'Assistant Professor (Adiunkt)',
-    midtermLabel: 'NCN Progress Check & RDN Audit',
-    stakesNote: 'Survive NCN Plan S open-access checks & RDN habilitation review.',
+    label: 'Grants & Habilitation',
+    shortLabel: 'Grants & Tenure',
+    roleTitle: 'Assistant Professor',
+    midtermLabel: 'Mid-Cycle Grant & Promotion Check',
+    stakesNote: 'Survive National Grant Agency open-access audits & senior promotion review.',
   },
 };
 
 export const ACADEMIC_ACTIONS: AcademicAction[] = [
   {
     id: 'preprint',
-    name: 'Open Preprint (D2C Bypass)',
+    name: 'Open Preprint (Direct Share)',
     avatar: '⚡',
     avatarBg: 'bg-[#FFF2C9]',
     badgeText: '0 PTS',
     badgeStyle: 'zero',
-    desc: 'Instant DOI timestamp, NCN Plan S compliant, readable by LLMs & OpenAIRE. Shields priority!',
+    desc: 'Free, instant timestamped ID (DOI), meets funder Open Access rules, readable by AI & peers.',
     repeatable: true,
   },
   {
@@ -86,7 +134,7 @@ export const ACADEMIC_ACTIONS: AcademicAction[] = [
     avatarBg: 'bg-[#FCE0EA]',
     badgeText: '140 PTS',
     badgeStyle: 'mid',
-    desc: 'Solid peer-reviewed venue for habilitation. 18–24 mo review queue.',
+    desc: 'Respected peer-reviewed journal for promotion. Slow 18–24 month review queue.',
     repeatable: false,
   },
   {
@@ -96,7 +144,7 @@ export const ACADEMIC_ACTIONS: AcademicAction[] = [
     avatarBg: 'bg-[#EAE6E4]',
     badgeText: '200 PTS',
     badgeStyle: 'high',
-    desc: 'Commercial monopoly. 24-mo embargo, €3k fee or paywall lock. Risks NCN OA audit.',
+    desc: 'Commercial publisher monopoly. 24-month embargo, €3k fee or paywall lock. Risks grant audit.',
     repeatable: false,
   },
   {
@@ -106,7 +154,7 @@ export const ACADEMIC_ACTIONS: AcademicAction[] = [
     avatarBg: 'bg-[#FFEBD6]',
     badgeText: '140 PTS · €2.5k',
     badgeStyle: 'express',
-    desc: '"Fast-track peer review in 2 weeks!" Steep APC fee, grey-zone mega-journal.',
+    desc: '"Peer review in 2 weeks!" Steep €2,500 publishing fee (APC) at a controversial mega-journal.',
     repeatable: false,
   },
   {
@@ -116,7 +164,7 @@ export const ACADEMIC_ACTIONS: AcademicAction[] = [
     avatarBg: 'bg-[#FFE4D4]',
     badgeText: '70 PTS each',
     badgeStyle: 'mid',
-    desc: 'Chop 1 good idea into tiny repetitive papers. Fast points, drains credibility.',
+    desc: 'Chop 1 good idea into tiny repetitive papers. Fast points, drains academic credibility.',
     repeatable: true,
   },
   {
@@ -126,7 +174,7 @@ export const ACADEMIC_ACTIONS: AcademicAction[] = [
     avatarBg: 'bg-[#E3EFFB]',
     badgeText: '25 PTS',
     badgeStyle: 'low',
-    desc: '15-min talk abroad + 4 faculty & Szkoła Doktorska committees.',
+    desc: 'Fly abroad for a 15-min talk + sit on 4 university committees.',
     repeatable: true,
   },
 ];
@@ -135,10 +183,10 @@ export const ENDINGS_CATALOG: EndingMeta[] = [
   {
     id: 'hacker',
     shortTitle: 'Dual-Type System Hacker',
-    cardTag: 'CHEAT CODE / TRUE WIN',
+    cardTag: 'TRUE WIN / CHEAT CODE',
     icon: '⚡',
-    hint: 'Hit 200+ pts while posting a Preprint first — and stay clean of cartels.',
-    summary: 'Beat Punktoza, satisfied NCN Plan S, and stayed 100% visible to AI & peers.',
+    hint: 'Hit 200+ pts while posting an Open Preprint first — and avoid citation cartels.',
+    summary: 'Beat the point system, met Open Access grant rules, and stayed 100% visible to AI & peers.',
   },
   {
     id: 'ghost',
@@ -146,7 +194,7 @@ export const ENDINGS_CATALOG: EndingMeta[] = [
     cardTag: 'PYRRHIC VICTORY',
     icon: '👻',
     hint: 'Reach 200+ pts without ever posting an Open Preprint (and decline the cartel).',
-    summary: 'Kept your job via paywalls or salami slicing, but vanished from LLMs & OpenAIRE.',
+    summary: 'Kept your job via paywalls or salami slicing, but vanished from AI tools & open catalogs.',
   },
   {
     id: 'cartel',
@@ -154,15 +202,15 @@ export const ENDINGS_CATALOG: EndingMeta[] = [
     cardTag: 'ETHICS SCANDAL',
     icon: '🃏',
     hint: 'Accept the Senior Professor’s Co-Authorship Cartel pact in Year 3.',
-    summary: 'Smashed the Ministry spreadsheet, then got flagged by Retraction Watch & RDN.',
+    summary: 'Smashed the Ministry spreadsheet, then got flagged by integrity watchdogs during promotion.',
   },
   {
     id: 'delisted',
     shortTitle: 'Bankrupt & Delisted',
-    cardTag: 'APC TRAP',
+    cardTag: 'FEE TRAP',
     icon: '💸',
     hint: 'Bet on the 14-day Express Special Issue and fall short of 200 pts after delisting.',
-    summary: 'Paid €2,500 for fast points, got delisted overnight, and failed NCN reimbursement.',
+    summary: 'Paid €2,500 for fast points, got delisted overnight, and failed grant reimbursement.',
   },
   {
     id: 'scooped',
@@ -170,14 +218,14 @@ export const ENDINGS_CATALOG: EndingMeta[] = [
     cardTag: 'PRIORITY LOST',
     icon: '⏰',
     hint: 'Submit to a big journal without a Preprint shield, get hit by Reviewer #2, and miss 200 pts.',
-    summary: 'Lost priority during an 18-month review queue because you had no public DOI timestamp.',
+    summary: 'Lost priority during an 18-month review queue because you had no public timestamp.',
   },
   {
     id: 'fired',
     shortTitle: 'Contract Terminated',
     cardTag: 'PURE PUNKTOZA',
     icon: '📉',
-    hint: 'Finish below 200 pts through honest open science, conferences, or ministerial nerfs.',
+    hint: 'Finish below 200 pts through honest open science, conferences, or sudden point cuts.',
     summary: 'High ideals or tough luck, but the central spreadsheet gave zero survival points.',
   },
 ];

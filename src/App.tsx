@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { RotateCcw, ShieldCheck, Trophy, Volume2, VolumeX } from 'lucide-react';
+import {
+  BookOpen,
+  RotateCcw,
+  ShieldCheck,
+  Trophy,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
 import {
   ACADEMIC_ACTIONS,
   ActionId,
@@ -11,6 +18,7 @@ import {
 } from './data/simulationData';
 import { CollectionModal } from './components/CollectionModal';
 import { ActiveTwist, EventModal } from './components/EventModal';
+import { GlossaryModal } from './components/GlossaryModal';
 import { ResultView } from './components/ResultView';
 import { playTone } from './utils/sound';
 
@@ -111,6 +119,7 @@ export default function App() {
   );
   const [isNewUnlock, setIsNewUnlock] = useState(false);
   const [showCollection, setShowCollection] = useState(false);
+  const [showGlossary, setShowGlossary] = useState(false);
 
   const timersRef = useRef<number[]>([]);
 
@@ -122,6 +131,22 @@ export default function App() {
   useEffect(() => {
     return () => clearPendingTimers();
   }, []);
+
+  // Lock background scroll while any modal/bottom-sheet is open on mobile/tablet
+  const isAnyModalOpen = !!activeTwist || showCollection || showGlossary;
+  useEffect(() => {
+    if (!isAnyModalOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isAnyModalOpen]);
+
+  // Smoothly return to top when switching screens on phones
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, [screen]);
 
   const scheduleTimer = (fn: () => void, ms: number) => {
     const id = window.setTimeout(fn, ms);
@@ -207,8 +232,8 @@ export default function App() {
       next.visibility = clamp(next.visibility + 55);
       next.credibility = clamp(next.credibility + 5);
       nextToast = {
-        lead: '⚡ +0 Ministry Points · DOI Shield Active!',
-        body: 'Your Dean frowns, but you unlocked priority proof & NCN Plan S Green OA.',
+        lead: '⚡ +0 Ministry Points · Priority Shield Active!',
+        body: 'Your Dean frowns, but you unlocked a public timestamp (DOI) & Open-Access grant compliance.',
         tone: 'shield',
       };
     } else if (id === 'j140') {
@@ -223,8 +248,8 @@ export default function App() {
         next.visibility = clamp(next.visibility + 15);
         next.credibility = clamp(next.credibility + 10);
         nextToast = {
-          lead: `🛡️ DOI Shield Blocked Reviewer #2! (+${ptsAdded} pts)`,
-          body: 'A rival tried to scoop you during peer review, but your Preprint timestamp proved priority!',
+          lead: `🛡️ Priority Shield Blocked Reviewer #2! (+${ptsAdded} pts)`,
+          body: 'A rival tried to scoop you during peer review, but your Preprint timestamp proved you were first!',
           tone: 'shield',
         };
       } else {
@@ -250,8 +275,8 @@ export default function App() {
         next.visibility = clamp(next.visibility + 15);
         next.credibility = clamp(next.credibility + 10);
         nextToast = {
-          lead: '🛡️ +200 pts & DOI Shield Held!',
-          body: 'Paywall locked the journal version, but your Preprint beat Reviewer #2 and keeps NCN & LLMs happy.',
+          lead: '🛡️ +200 pts & Priority Shield Held!',
+          body: 'The journal version is paywalled, but your Preprint beat Reviewer #2 and keeps funders & AI tools happy.',
           tone: 'shield',
         };
       } else {
@@ -262,7 +287,7 @@ export default function App() {
         }
         nextToast = {
           lead: '🐉 +200 pts! Huge Ministry score!',
-          body: 'Locked behind a €39.95 paywall & fails NCN Open Access.',
+          body: 'Locked behind a €39.95 paywall & fails Open-Access grant rules.',
           tone: 'warn',
         };
       }
@@ -273,7 +298,7 @@ export default function App() {
       next.credibility = clamp(next.credibility - 15);
       nextToast = {
         lead: '💸 +140 pts in 14 days!',
-        body: 'Fastest peer review ever. €2,500 APC invoice forwarded to NCN...',
+        body: 'Fastest peer review ever. €2,500 publishing fee (APC) sent to the Grant Agency...',
         tone: 'warn',
       };
     } else if (id === 'salami') {
@@ -292,7 +317,7 @@ export default function App() {
       next.credibility = clamp(next.credibility - 10);
       nextToast = {
         lead: '✈️ +25 pts!',
-        body: 'Exhausted from flights & Szkoła Doktorska committees (-10% Sanity).',
+        body: 'Exhausted from flights & university committees (-10% Sanity).',
         tone: 'neutral',
       };
     }
@@ -303,7 +328,6 @@ export default function App() {
 
     // Determine which plot twist triggers after this pick (at most 1 modal per turn)
     if (next.ballsLeft <= 2 && !next.nerfed) {
-      // YEAR 2 CHECKPOINT: Szkoła Doktorska Ocena Śródokresowa + Ministerial Patch
       scheduleTimer(() => {
         playTone('nerf', muted);
         const passedMidterm = next.points >= 70;
@@ -328,7 +352,6 @@ export default function App() {
         });
       }, 360);
     } else if (triggerScoopOnThisPick) {
-      // ROUTE 1: Reviewer #2 & The Scoop
       scheduleTimer(() => {
         playTone('nerf', muted);
         triggerShake();
@@ -344,7 +367,6 @@ export default function App() {
       next.hasSpecial140 &&
       !next.specialDelisted
     ) {
-      // ROUTE 2: Clarivate Delisting & €2,500 NCN APC Rejection
       scheduleTimer(() => {
         playTone('nerf', muted);
         triggerShake();
@@ -360,7 +382,6 @@ export default function App() {
         });
       }, 360);
     } else if (next.ballsLeft === 1 && !next.cartelResolved) {
-      // ROUTE 3: Senior Professor's Co-Authorship Cartel Offer vs NCN Audit
       scheduleTimer(() => {
         playTone('pick', muted);
         setActiveTwist({
@@ -439,7 +460,7 @@ export default function App() {
     setActiveTwist(null);
     setToast({
       lead: '💸 Paid €2,500 out of pocket for 20 pts!',
-      body: 'Budget wiped out and RDN Habilitation flagged the delisted venue.',
+      body: 'Budget wiped out and the Promotion Board flagged the delisted journal.',
       tone: 'warn',
     });
     if (updated.ballsLeft === 0) {
@@ -527,26 +548,40 @@ export default function App() {
   const currentEndingId = resolveEndingId(game);
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-3 sm:p-6">
+    <div className="relative min-h-dvh w-full flex flex-col items-center justify-start sm:justify-center safe-shell">
+      <div className="bg-mesh-backdrop" aria-hidden="true" />
       <div className="grain-overlay" aria-hidden="true" />
 
       <main
-        className={`relative z-10 w-full max-w-[490px] bg-[#FAF6F2] rounded-[26px] px-[18px] pt-4 pb-6 shadow-[0_20px_50px_rgba(45,20,20,0.22)] border border-white/65 transition-transform ${
+        className={`relative z-10 w-full max-w-[520px] md:max-w-[740px] bg-[#FAF6F2] rounded-[24px] sm:rounded-[28px] px-4 py-4 sm:px-6 sm:py-6 shadow-[0_20px_50px_rgba(45,20,20,0.22)] border border-white/65 transition-transform ${
           isShaking ? 'animate-shake' : ''
         }`}
       >
         {/* Top Utility Bar */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <span className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#5C5752] truncate">
-            Interactive Simulation · Poland
+        <div className="flex items-center justify-between gap-2 mb-3.5">
+          <span className="text-[11px] sm:text-[11.5px] font-bold tracking-[0.06em] uppercase text-[#5C5752] min-w-0 truncate">
+            <span className="hidden sm:inline">
+              Academic Simulation · Poland
+            </span>
+            <span className="sm:hidden">Poland · Simulation</span>
           </span>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowGlossary(true)}
+              aria-label="Open glossary of terms and abbreviations"
+              className="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-xl text-[12px] font-bold text-[#0A5EB0] bg-white/85 border border-[#E5DDD5] hover:bg-white active:scale-[0.97] transition-all cursor-pointer whitespace-nowrap"
+            >
+              <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Terms</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setShowCollection(true)}
               aria-label={`Trainer Card Collection: ${unlockedEndings.length} of ${ENDINGS_CATALOG.length} endings unlocked`}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold text-[#1E1D1C] bg-white/80 border border-[#E5DDD5] hover:bg-white transition-colors cursor-pointer whitespace-nowrap tabular-nums"
+              className="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-xl text-[12px] font-bold text-[#1E1D1C] bg-white/85 border border-[#E5DDD5] hover:bg-white active:scale-[0.97] transition-all cursor-pointer whitespace-nowrap tabular-nums"
             >
               <Trophy className="w-3.5 h-3.5 text-[#C98A1B]" aria-hidden="true" />
               <span>
@@ -560,9 +595,9 @@ export default function App() {
                 onClick={startGame}
                 title="Restart Cycle"
                 aria-label="Restart Cycle"
-                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#5C5752] hover:text-[#1E1D1C] hover:bg-black/5 transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-[#5C5752] hover:text-[#1E1D1C] hover:bg-black/5 active:scale-[0.97] transition-all cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                <RotateCcw className="w-4 h-4" aria-hidden="true" />
               </button>
             )}
 
@@ -571,7 +606,7 @@ export default function App() {
               onClick={() => setMuted((m) => !m)}
               title={muted ? 'Unmute sound effects' : 'Mute sound effects'}
               aria-label={muted ? 'Unmute sound effects' : 'Mute sound effects'}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#5C5752] hover:text-[#1E1D1C] hover:bg-black/5 transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-[#5C5752] hover:text-[#1E1D1C] hover:bg-black/5 active:scale-[0.97] transition-all cursor-pointer"
             >
               {muted ? (
                 <VolumeX className="w-4 h-4" aria-hidden="true" />
@@ -590,103 +625,118 @@ export default function App() {
             </div>
             <h1
               id="intro-title"
-              className="text-[25px] sm:text-[27px] leading-[1.14] font-extrabold tracking-[-0.02em] text-[#1E1D1C] mb-2 text-balance"
+              className="text-[24px] sm:text-[28px] md:text-[32px] leading-[1.14] font-extrabold tracking-[-0.02em] text-[#1E1D1C] mb-2 text-balance"
             >
               Academic Pokémon Go:
               <br />
               Survive Punktoza
             </h1>
-            <p className="text-[14px] leading-[1.48] text-[#5C5752]">
-              You know preprints are faster, open, and AI-ready. Now survive 4
-              years of Polish academic evaluation—complete with{' '}
-              <strong>Reviewer #2</strong>, <strong>delisted journals</strong>,{' '}
-              <strong>NCN audits</strong>, and{' '}
-              <strong>Ocena Śródokresowa</strong>.
+            <p className="text-[14px] sm:text-[15px] leading-[1.5] text-[#5C5752] max-w-[60ch]">
+              In Poland, <strong>Punktoza</strong> (&ldquo;point-itis&rdquo;)
+              means researchers keep their jobs strictly by collecting points
+              from a central Ministry journal spreadsheet. Survive 4 years of{' '}
+              <strong>Reviewer #2</strong>, <strong>delisted journals</strong>,
+              and <strong>Open-Access audits</strong>!
             </p>
 
-            {/* Track selector (functional segmented control) */}
-            <div className="mt-3.5">
-              <div className="text-[11.5px] font-bold text-[#5C5752] mb-1.5">
-                Choose Your Academic Track:
-              </div>
-              <div
-                className="grid grid-cols-2 gap-1 p-1 bg-[#EDE6DE] rounded-xl"
-                role="tablist"
-                aria-label="Academic Track"
-              >
-                {(['phd', 'habilitation'] as CareerTrack[]).map((t) => {
-                  const active = track === t;
-                  return (
+            {/* Responsive 2-column body on tablets */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 md:gap-4 my-4 items-stretch">
+              {/* Track selector */}
+              <div className="bg-white border-[1.5px] border-[#EAE2DA] rounded-2xl p-3.5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[12.5px] font-bold text-[#1E1D1C]">
+                      Choose Your Track:
+                    </span>
                     <button
-                      key={t}
                       type="button"
-                      role="tab"
-                      aria-selected={active}
-                      onClick={() => setTrack(t)}
-                      className={`py-2 px-2.5 rounded-lg text-[12.5px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                        active
-                          ? 'bg-white text-[#1E1D1C] shadow-xs'
-                          : 'text-[#5C5752] hover:text-[#1E1D1C]'
-                      }`}
+                      onClick={() => setShowGlossary(true)}
+                      className="text-[12px] font-bold text-[#0A5EB0] hover:underline cursor-pointer"
                     >
-                      {CAREER_TRACKS[t].shortLabel}
+                      Glossary →
                     </button>
-                  );
-                })}
+                  </div>
+                  <div
+                    className="grid grid-cols-2 gap-1 p-1 bg-[#EDE6DE] rounded-xl"
+                    role="tablist"
+                    aria-label="Academic Track"
+                  >
+                    {(['phd', 'habilitation'] as CareerTrack[]).map((t) => {
+                      const active = track === t;
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          role="tab"
+                          aria-selected={active}
+                          onClick={() => setTrack(t)}
+                          className={`min-h-[42px] py-2 px-2.5 rounded-lg text-[12.5px] sm:text-[13px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                            active
+                              ? 'bg-white text-[#1E1D1C] shadow-xs'
+                              : 'text-[#5C5752] hover:text-[#1E1D1C]'
+                          }`}
+                        >
+                          {CAREER_TRACKS[t].shortLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <p className="text-[12.5px] leading-[1.45] text-[#5C5752] mt-2.5">
+                  {CAREER_TRACKS[track].stakesNote}
+                </p>
               </div>
-              <p className="text-[12px] text-[#5C5752] mt-1.5">
-                {CAREER_TRACKS[track].stakesNote}
-              </p>
-            </div>
 
-            <div className="bg-white border-[1.5px] border-[#EAE2DA] rounded-2xl p-3.5 my-3.5">
-              <strong className="block text-[13px] font-bold text-[#1E1D1C]">
-                Your 4-Year Evaluation Rules:
-              </strong>
-              <ul className="mt-2 grid gap-1.5">
-                <li className="text-[13px] leading-[1.4] flex gap-2 items-start text-[#1E1D1C]">
-                  <span className="shrink-0" aria-hidden="true">
-                    🎯
-                  </span>
-                  <span>
-                    <strong>Goal:</strong> Hit{' '}
-                    <strong>200 Ministerial Points</strong> (and 70+ by Year 2
-                    Mid-Term) without tanking your Credibility.
-                  </span>
-                </li>
-                <li className="text-[13px] leading-[1.4] flex gap-2 items-start text-[#1E1D1C]">
-                  <span className="shrink-0" aria-hidden="true">
-                    🔴
-                  </span>
-                  <span>
-                    <strong>Ammo:</strong> You have{' '}
-                    <strong>4 Action Balls</strong> (1 per year) to navigate
-                    academic plot twists.
-                  </span>
-                </li>
-                <li className="text-[13px] leading-[1.4] flex gap-2 items-start text-[#1E1D1C]">
-                  <span className="shrink-0" aria-hidden="true">
-                    🏆
-                  </span>
-                  <span>
-                    <strong>Collect:</strong> Unlock all{' '}
-                    <strong>6 Trainer Card Endings</strong> ({unlockedEndings.length}
-                    /6 discovered).
-                  </span>
-                </li>
-              </ul>
+              {/* Rules summary */}
+              <div className="bg-white border-[1.5px] border-[#EAE2DA] rounded-2xl p-3.5">
+                <strong className="block text-[13px] font-bold text-[#1E1D1C]">
+                  Your 4-Year Evaluation Rules:
+                </strong>
+                <ul className="mt-2 grid gap-2">
+                  <li className="text-[13px] leading-[1.42] flex gap-2 items-start text-[#1E1D1C]">
+                    <span className="shrink-0" aria-hidden="true">
+                      🎯
+                    </span>
+                    <span>
+                      <strong>Goal:</strong> Hit{' '}
+                      <strong>200 Ministry Points</strong> (70+ by Year 2
+                      Mid-Term) without losing Credibility.
+                    </span>
+                  </li>
+                  <li className="text-[13px] leading-[1.42] flex gap-2 items-start text-[#1E1D1C]">
+                    <span className="shrink-0" aria-hidden="true">
+                      🔴
+                    </span>
+                    <span>
+                      <strong>Ammo:</strong> You have{' '}
+                      <strong>4 Action Balls</strong> (1 per year) for time,
+                      budget &amp; sanity.
+                    </span>
+                  </li>
+                  <li className="text-[13px] leading-[1.42] flex gap-2 items-start text-[#1E1D1C]">
+                    <span className="shrink-0" aria-hidden="true">
+                      🏆
+                    </span>
+                    <span>
+                      <strong>Collect:</strong> Unlock all{' '}
+                      <strong>6 Trainer Card Endings</strong> (
+                      {unlockedEndings.length}/6 discovered).
+                    </span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={startGame}
-              className="w-full rounded-[14px] py-[14px] px-[18px] text-[15px] font-bold bg-[#1E1D1C] text-white hover:bg-[#302E2C] active:scale-[0.985] transition-all flex justify-center items-center gap-2 mt-2 cursor-pointer whitespace-nowrap"
+              className="w-full min-h-[52px] rounded-[14px] py-3.5 px-5 text-[15px] sm:text-[16px] font-bold bg-[#1E1D1C] text-white hover:bg-[#302E2C] active:scale-[0.985] transition-all flex justify-center items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               Start 4-Year Cycle →
             </button>
 
-            <p className="text-center text-[11px] text-[#5C5752] mt-3.5 opacity-85">
-              Based on dr Hanna Gaweł&apos;s research · Jagiellonian University
+            <p className="text-center text-[11.5px] text-[#5C5752] mt-3.5 opacity-85">
+              Based on Dr. Hanna Gaweł&apos;s research · Jagiellonian University
             </p>
           </section>
         )}
@@ -790,7 +840,7 @@ export default function App() {
                 <div className="mt-2 pt-1.5 border-t border-[#F0E9E2] flex items-center gap-1.5 text-[11px] font-bold text-[#2E8555]">
                   <ShieldCheck className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                   <span>
-                    DOI Priority Shield Active · NCN Plan S Green OA Ready
+                    Priority Shield Active (DOI) · Open-Access Rule Met
                   </span>
                 </div>
               )}
@@ -812,8 +862,8 @@ export default function App() {
               </div>
             )}
 
-            {/* Wild Academic Action Cards */}
-            <div className="grid gap-2">
+            {/* Wild Academic Action Cards (1-col mobile, 2-col tablet/desktop) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-3">
               {ACADEMIC_ACTIONS.map((item) => {
                 const alreadyPicked =
                   !item.repeatable && game.picks.includes(item.id);
@@ -839,22 +889,22 @@ export default function App() {
                     type="button"
                     disabled={alreadyPicked || game.ballsLeft <= 0 || !!activeTwist}
                     onClick={() => handlePick(item.id)}
-                    className={`w-full bg-white border-[1.5px] border-[#EAE2DA] rounded-2xl px-3 py-2.5 flex items-center gap-3 text-left transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C] ${
+                    className={`w-full min-h-[72px] bg-white border-[1.5px] border-[#EAE2DA] rounded-2xl px-3.5 py-3 flex items-start sm:items-center gap-3 text-left transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C] ${
                       alreadyPicked || game.ballsLeft <= 0
                         ? 'opacity-45 cursor-not-allowed'
                         : 'cursor-pointer hover:border-[#C7BBB0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] active:scale-[0.985]'
                     }`}
                   >
                     <div
-                      className={`w-[42px] h-[42px] rounded-[12px] flex items-center justify-center text-[22px] shrink-0 ${item.avatarBg}`}
+                      className={`w-[44px] h-[44px] rounded-[13px] flex items-center justify-center text-[22px] shrink-0 ${item.avatarBg}`}
                       aria-hidden="true"
                     >
                       {item.avatar}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center gap-2 mb-0.5">
-                        <span className="text-[14px] font-extrabold text-[#1E1D1C] truncate">
+                      <div className="flex justify-between items-start gap-2 mb-1">
+                        <span className="text-[14px] leading-snug font-extrabold text-[#1E1D1C]">
                           {item.name}
                           {pickCount > 0 && item.repeatable && (
                             <span className="ml-1 text-[11px] font-bold text-[#5C5752]">
@@ -886,7 +936,7 @@ export default function App() {
                         )}
                       </div>
 
-                      <p className="text-[11.5px] leading-[1.35] text-[#5C5752]">
+                      <p className="text-[12px] leading-[1.38] text-[#5C5752]">
                         {alreadyPicked
                           ? 'Already attempted in this 4-year cycle.'
                           : item.desc}
@@ -946,6 +996,11 @@ export default function App() {
           onClose={() => setShowCollection(false)}
           onResetCollection={handleResetCollection}
         />
+      )}
+
+      {/* GLOSSARY MODAL */}
+      {showGlossary && (
+        <GlossaryModal onClose={() => setShowGlossary(false)} />
       )}
     </div>
   );

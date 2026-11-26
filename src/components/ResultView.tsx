@@ -94,7 +94,7 @@ export function ResultView({
             </h2>
             <p className="text-[13.5px] leading-[1.48] text-[#3C352B]">
               You paired <strong>Preprints + Points</strong> to beat every trap
-              in Polish academia:
+              in the evaluation system:
             </p>
             <ul className="mt-2.5 grid gap-2">
               <li className="text-[13px] leading-[1.4] flex gap-2 items-start text-[#1E1D1C]">
@@ -102,9 +102,9 @@ export function ResultView({
                   1️⃣
                 </span>
                 <span>
-                  <strong>Preprint first</strong> → immutable DOI timestamp
-                  (anti-scoop shield), NCN Plan S Green OA compliance, and 100%
-                  LLM/OpenAIRE visibility.
+                  <strong>Preprint first</strong> → permanent timestamp (DOI)
+                  blocking scoops, free Open-Access compliance (Plan S), and
+                  100% visibility to AI tools &amp; peers.
                 </span>
               </li>
               <li className="text-[13px] leading-[1.4] flex gap-2 items-start text-[#1E1D1C]">
@@ -113,7 +113,7 @@ export function ResultView({
                 </span>
                 <span>
                   <strong>200-pt journal second</strong> → satisfies the
-                  Ministry spreadsheet, Szkoła Doktorska, and RDN Habilitation.
+                  Ministry spreadsheet, Doctoral School, and Promotion Board.
                 </span>
               </li>
             </ul>
@@ -163,9 +163,9 @@ export function ResultView({
             </p>
             <p className="text-[13.5px] leading-[1.48] text-white/85 mt-2.5">
               <strong className="text-white">The cost:</strong> Paywalls block
-              web scrapers—LLMs &amp; OpenAIRE skip you, and{' '}
+              web crawlers—AI tools &amp; open catalogs skip you, and the{' '}
               <strong>
-                NCN flags missing Plan S Open Access compliance
+                Grant Agency flags missing Open-Access compliance
               </strong>
               .
             </p>
@@ -210,9 +210,9 @@ export function ResultView({
               <strong className="text-white">{points} points</strong>. Your
               department celebrates the spreadsheet windfall—until{' '}
               <strong className="text-white">
-                Retraction Watch &amp; an AI integrity audit
+                integrity watchdogs &amp; Retraction Watch
               </strong>{' '}
-              flag the citation ring during your RDN Habilitation review.
+              flag the citation ring during your promotion review.
             </p>
 
             <StatTrio
@@ -239,16 +239,18 @@ export function ResultView({
         <>
           <div className="rounded-[20px] px-[18px] py-5 mb-3.5 bg-[#FFF7ED] border-2 border-[#F59E0B]">
             <div className="inline-block text-[11px] font-bold tracking-[0.06em] uppercase px-2.5 py-1 rounded-md bg-[#B45309] text-white mb-2.5">
-              💸 APC &amp; DELISTING TRAP
+              💸 FEE &amp; DELISTING TRAP
             </div>
             <h2 className="text-[21px] leading-[1.2] font-extrabold tracking-[-0.02em] text-[#1E1D1C] mb-1.5">
               Bankrupt &amp; Delisted!
             </h2>
             <p className="text-[13.5px] leading-[1.48] text-[#452103]">
               You gambled on the 14-day Express Special Issue for fast points.
-              Clarivate delisted it mid-cycle (140 → 20 pts),{' '}
-              <strong>NCN rejected the €2,500 APC invoice</strong>, and the RDN
-              Habilitation panel questioned the venue.
+              Web of Science delisted it mid-cycle (140 → 20 pts), the{' '}
+              <strong>
+                Grant Agency rejected the €2,500 publishing fee (APC)
+              </strong>
+              , and the Promotion Board questioned the journal.
             </p>
 
             <StatTrio
@@ -264,9 +266,9 @@ export function ResultView({
 
           <p className="text-[13.5px] leading-[1.48] text-[#5C5752]">
             <strong className="text-[#1E1D1C]">Key distinction:</strong>{' '}
-            Pay-to-play Gold OA is not the same as free{' '}
-            <strong>Preprints &amp; Diamond OA</strong>. Don&apos;t burn grant
-            budgets chasing volatile point lists.
+            Pay-to-play commercial Open Access is not the same as free{' '}
+            <strong>Preprints &amp; community-run journals</strong>. Don&apos;t
+            burn grant budgets chasing volatile point lists.
           </p>
         </>
       )}
@@ -284,8 +286,8 @@ export function ResultView({
             <p className="text-[13.5px] leading-[1.48] text-[#1E3A5F]">
               Reviewer #2 stalled your manuscript for 11 months while a rival
               group published first. Because you waited for the journal instead
-              of posting a <strong>Preprint with an immutable DOI</strong>, you
-              lost both priority and the 200-point quota.
+              of posting a <strong>Preprint with a permanent timestamp (DOI)</strong>
+              , you lost both priority and the 200-point quota.
             </p>
 
             <StatTrio
@@ -302,7 +304,7 @@ export function ResultView({
           <p className="text-[13.5px] leading-[1.48] text-[#5C5752]">
             <strong className="text-[#1E1D1C]">Tip for next run:</strong> Post
             an <strong>Open Preprint first</strong> to unlock the{' '}
-            <strong>DOI Timestamp Shield</strong> before submitting to slow
+            <strong>Priority Timestamp Shield</strong> before submitting to slow
             journals.
           </p>
         </>
@@ -322,8 +324,8 @@ export function ResultView({
             </h2>
             <p className="text-[13.5px] leading-[1.48] text-[#3D1F1F]">
               {hasPreprint
-                ? 'You followed the open-science ideal and shared preprints. AI, NCN Plan S & peers loved it — but the Ministry spreadsheet gives 0 points for preprints.'
-                : 'Between committee grind, Ocena Śródokresowa pressure, and overnight ministerial point nerfs, you missed the 200-point quota.'}
+                ? 'You followed the open-science ideal and shared preprints. AI, funders & peers loved it — but the Ministry spreadsheet gives 0 points for preprints.'
+                : 'Between committee grind, Mid-Term Evaluation pressure, and overnight ministerial point cuts, you missed the 200-point quota.'}
             </p>
 
             <StatTrio
@@ -346,13 +348,13 @@ export function ResultView({
         </>
       )}
 
-      {/* NCN / Open Access Audit footnote */}
-      <div className="mt-3 px-3 py-2 rounded-xl bg-white border border-[#EAE2DA] text-[12px] text-[#5C5752] flex items-center justify-between gap-2">
-        <span>NCN Plan S Open-Access Audit:</span>
+      {/* Open Access Audit footnote */}
+      <div className="mt-3 px-3.5 py-2.5 rounded-xl bg-white border border-[#EAE2DA] text-[12.5px] sm:text-[13px] text-[#5C5752] flex flex-wrap items-center justify-between gap-2">
+        <span>Funder Open-Access Audit (Plan S):</span>
         <strong
           className={ncnCompliant ? 'text-[#2E8555]' : 'text-[#B81D1D]'}
         >
-          {ncnCompliant ? 'Compliant (Green OA) ✓' : 'Non-Compliant ✕'}
+          {ncnCompliant ? 'Compliant (Free Copy) ✓' : 'Non-Compliant ✕'}
         </strong>
       </div>
 
@@ -361,33 +363,33 @@ export function ResultView({
         <button
           type="button"
           onClick={onUnlockCheat}
-          className="w-full rounded-[14px] py-[14px] px-[18px] text-[14px] font-bold text-[#1E1D1C] shadow-[0_8px_20px_rgba(228,158,50,0.35)] hover:brightness-[1.03] active:scale-[0.985] transition-all flex justify-center items-center gap-2 mt-3.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C]"
+          className="w-full min-h-[50px] rounded-[14px] py-3.5 px-4 text-[14px] sm:text-[15px] font-bold text-[#1E1D1C] shadow-[0_8px_20px_rgba(228,158,50,0.35)] hover:brightness-[1.03] active:scale-[0.985] transition-all flex justify-center items-center gap-2 mt-3.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E1D1C]"
           style={{
             background: 'linear-gradient(135deg, #F7D16A, #E49E32)',
           }}
         >
-          ⚡ Use Cheat Code: Attach Preprint (Open API)
+          ⚡ Use Cheat Code: Attach Preprint (Open Access)
         </button>
       )}
 
-      <div className="grid grid-cols-2 gap-2 mt-2.5">
+      <div className="grid grid-cols-2 gap-2 sm:gap-2.5 mt-2.5">
         <button
           type="button"
           onClick={onPlayAgain}
-          className="rounded-[14px] py-3 px-3 text-[13.5px] font-bold bg-[#1E1D1C] text-white hover:bg-[#302E2C] active:scale-[0.985] transition-all cursor-pointer whitespace-nowrap"
+          className="min-h-[48px] rounded-[14px] py-3 px-3 sm:px-4 text-[13.5px] sm:text-[14px] font-bold bg-[#1E1D1C] text-white hover:bg-[#302E2C] active:scale-[0.985] transition-all cursor-pointer whitespace-nowrap"
         >
           ↻ Play Again
         </button>
         <button
           type="button"
           onClick={onOpenCollection}
-          className="rounded-[14px] py-3 px-3 text-[13.5px] font-bold bg-transparent border-[1.5px] border-[#D8CFC6] text-[#1E1D1C] hover:bg-black/[0.03] active:scale-[0.985] transition-all cursor-pointer whitespace-nowrap tabular-nums"
+          className="min-h-[48px] rounded-[14px] py-3 px-3 sm:px-4 text-[13.5px] sm:text-[14px] font-bold bg-transparent border-[1.5px] border-[#D8CFC6] text-[#1E1D1C] hover:bg-black/[0.03] active:scale-[0.985] transition-all cursor-pointer whitespace-nowrap tabular-nums"
         >
           🏆 Endings ({unlockedCount}/6)
         </button>
       </div>
 
-      <p className="text-center text-[11px] text-[#5C5752] mt-3.5 opacity-85">
+      <p className="text-center text-[11.5px] text-[#5C5752] mt-3.5 opacity-85">
         Show your Trainer Card to the person next to you!
       </p>
     </section>
@@ -414,35 +416,37 @@ function StatTrio({
   dark,
 }: StatTrioProps) {
   const boxCls = dark
-    ? 'bg-white/10 border border-white/15 rounded-xl p-2 text-center text-white'
-    : 'bg-white/90 rounded-xl p-2 text-center text-[#1E1D1C]';
+    ? 'bg-white/10 border border-white/15 rounded-xl px-1.5 py-2 sm:p-2.5 text-center text-white min-w-0'
+    : 'bg-white/90 rounded-xl px-1.5 py-2 sm:p-2.5 text-center text-[#1E1D1C] min-w-0';
 
   return (
-    <div className="grid grid-cols-3 gap-2 mt-3.5">
+    <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 mt-3.5">
       <div className={boxCls}>
-        <div className="text-[9.5px] uppercase font-bold opacity-75 mb-0.5">
+        <div className="text-[9.5px] sm:text-[10.5px] uppercase font-bold opacity-75 mb-0.5 truncate">
           Ministry
         </div>
-        <div className={`text-[14px] font-extrabold tabular-nums ${pointsColor}`}>
+        <div
+          className={`text-[12.5px] sm:text-[15px] font-extrabold tabular-nums leading-tight ${pointsColor}`}
+        >
           {points}
         </div>
       </div>
       <div className={boxCls}>
-        <div className="text-[9.5px] uppercase font-bold opacity-75 mb-0.5">
+        <div className="text-[9.5px] sm:text-[10.5px] uppercase font-bold opacity-75 mb-0.5 truncate">
           AI &amp; Open
         </div>
         <div
-          className={`text-[14px] font-extrabold tabular-nums ${visibilityColor}`}
+          className={`text-[12.5px] sm:text-[15px] font-extrabold tabular-nums leading-tight ${visibilityColor}`}
         >
           {visibility}
         </div>
       </div>
       <div className={boxCls}>
-        <div className="text-[9.5px] uppercase font-bold opacity-75 mb-0.5">
+        <div className="text-[9.5px] sm:text-[10.5px] uppercase font-bold opacity-75 mb-0.5 truncate">
           Credibility
         </div>
         <div
-          className={`text-[14px] font-extrabold tabular-nums ${credibilityColor}`}
+          className={`text-[12.5px] sm:text-[15px] font-extrabold tabular-nums leading-tight ${credibilityColor}`}
         >
           {credibility}
         </div>
