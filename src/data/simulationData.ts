@@ -70,19 +70,19 @@ export interface GlossaryItem {
 
 export const GLOSSARY_TERMS: GlossaryItem[] = [
   {
-    term: 'Punktoza ("Point-itis")',
+    term: 'Punktoza ("Point-itis") & 400-Point Quota',
     meaning:
-      'Poland’s national evaluation system where careers and faculty budgets depend strictly on collecting points from a central Ministry journal spreadsheet.',
+      'Poland’s 4-year national evaluation system where careers and faculty budgets depend on filling 4 publication slots to hit 400 Ministry points (140+ by Year 2 Mid-Term) from a central journal spreadsheet.',
   },
   {
     term: 'Mid-Term PhD Evaluation & External Review',
     meaning:
-      'A mandatory Year 2 review in Polish Doctoral Schools plus external thesis reviews. Falling behind—or upsetting conservative reviewers—risks stipend cuts.',
+      'A mandatory Year 2 Doctoral School checkpoint (140+ pts) plus external thesis reviews. Falling behind—or upsetting conservative reviewers—risks stipend cuts.',
   },
   {
-    term: 'Habilitation (dr hab.) & Promotion Board',
+    term: 'Habilitation (dr hab.) & Promotion Board (RDN)',
     meaning:
-      'A post-PhD senior qualification required for professorship in Central Europe, judged by a national Promotion Board (RDN) checklist.',
+      'A post-PhD senior qualification required for professorship in Central Europe, judged by Poland’s Council for Scientific Excellence (RDN) checklist.',
   },
   {
     term: 'National Grant Agency (NCN) & Plan S',
@@ -90,24 +90,44 @@ export const GLOSSARY_TERMS: GlossaryItem[] = [
       'Poland’s public science funder enforces Plan S: grant-funded articles must be freely readable online (Open Access) immediately upon publication.',
   },
   {
-    term: 'Preprint & DOI',
+    term: 'Preprint, DOI & Priority Shield',
     meaning:
-      'A full manuscript shared openly online before peer review. It receives a DOI (Digital Object Identifier)—a permanent timestamp proving you were first.',
+      'A full manuscript shared openly online before peer review. It receives a DOI (Digital Object Identifier)—a permanent timestamp proving you were first if a rival tries to scoop you.',
   },
   {
-    term: 'Publishing Fee (APC)',
+    term: 'Open Infrastructure & Diamond OA',
     meaning:
-      'Article Processing Charge—an upfront fee (often €2,000–€3,000+) commercial journals charge authors to make an article Open Access.',
+      'Scholar-owned, non-commercial publishing (preprint servers, institutional repositories, and Diamond Open Access journals with zero author or reader fees)—the core theme of the SOSF 2026 talk.',
+  },
+  {
+    term: 'Publishing Fee (APC) & Delisting Risk',
+    meaning:
+      'Article Processing Charge—an upfront fee (often €2,000–€3,000+) commercial journals charge authors. If a mega-journal gets delisted mid-cycle, grant agencies reject the bill.',
+  },
+  {
+    term: 'Guerrilla Open Access (Raven & Key / Sci-Hub)',
+    meaning:
+      'Symbolized by a raven perched on books holding a key, guerrilla open access emerged because steep paywalls lock readers outside university library VPNs—showing why legal open preprints are vital.',
   },
   {
     term: '50% Creative-Cost Tax Break (KUP)',
     meaning:
-      'A Polish tax perk allowing university employees to deduct 50% of creative/research income—often tempting part-time corporate staff to keep a fractional campus job.',
+      'A Polish tax perk allowing university employees to deduct 50% of creative/research income—often tempting corporate practitioners to keep a fractional 1/4-time campus job.',
   },
   {
-    term: 'Knowledge Points (KP)',
+    term: 'Knowledge Points (KP) vs. Ministry Points',
     meaning:
-      'Real scientific value—open datasets, textbooks, mentorship, preprints, and honest research—that rarely counts on the Ministry spreadsheet.',
+      'Real scientific value—open datasets, textbooks, mentorship, preprints, and honest peer review—versus arbitrary points tracked on the Ministry spreadsheet.',
+  },
+  {
+    term: 'Salami Slicing & "Reviewer #2"',
+    meaning:
+      'Salami slicing splits one solid study into multiple minimal papers for extra points; "Reviewer #2" is academic shorthand for the slow, hostile anonymous reviewer who can stall you until a rival scoops you.',
+  },
+  {
+    term: 'Hidden Academic Treasures & Sovereign Scholar Pass',
+    meaning:
+      'Watch for secret moments during play—International Open Access Week (🔓), Institute Christmas Dumplings (🥟), and the late-night Library VPN Raven & Key (🗝️)—plus the secret 8-Ending Prize unlocking Open Infrastructure Mode!',
   },
 ];
 
@@ -178,6 +198,12 @@ export const LIFECYCLE_GLOSSARY: GlossaryItem[] = [
       'Treating teaching, student mentorship, and outreach as "wasted time" for 5–7 years while obsessing strictly over the Promotion Board checklist.',
   },
   {
+    term: 'Academic Sabbatical (Senior Reward)',
+    group: 'pure',
+    meaning:
+      'Paid research leave for senior scholars to recover from burnout and focus on deep work—in Pure: Senior, it lets you withdraw a spent Action Ball back into your pouch and boost energy.',
+  },
+  {
     term: 'The Administrative Retreat (Post-Habilitation)',
     group: 'pure',
     meaning:
@@ -200,6 +226,12 @@ export const LIFECYCLE_GLOSSARY: GlossaryItem[] = [
     group: 'hybrid',
     meaning:
       'Taking a paid corporate report or training manual from your day job, slapping 3 pages of literature review on top, and publishing it as "original research."',
+  },
+  {
+    term: 'Corporate Boss’s PhD Teaching Practicum (Hybrid Reversal)',
+    group: 'hybrid',
+    meaning:
+      'When your corporate manager enrolls in Doctoral School and needs mandatory university teaching hours—with YOU as their academic supervisor. Power dynamics collide with scholarly integrity.',
   },
   {
     term: 'Title Arbitrage (Hybrid)',

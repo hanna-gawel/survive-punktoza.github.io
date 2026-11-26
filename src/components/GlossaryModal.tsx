@@ -125,10 +125,10 @@ export function GlossaryModal({
         <div className="px-5 py-3.5 overflow-y-auto overscroll-contain flex-1">
           <p className="text-[13px] text-[#5A5468] mb-3.5">
             {tab === 'terms'
-              ? 'New to Polish science policy or Open Access acronyms? Here is a plain-English cheat sheet for every term in the game:'
+              ? 'New to Polish science policy, Open Infrastructure, or hidden rewards? Here is a plain-English cheat sheet for every term and acronym in the game:'
               : tab === 'darkarts'
                 ? 'Beyond obvious sins like salami slicing, Polish Punktoza bred 10 quieter bureaucratic dark arts—all woven into gameplay:'
-                : 'Incentives twist completely depending on whether academia is your only paycheck (Pure Academia) or one half of your identity (Hybrid):'}
+                : 'Incentives, rewards, and plot twists shift completely depending on whether academia is your only paycheck (Pure Academia) or one half of your identity (Hybrid):'}
           </p>
 
           <dl className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
